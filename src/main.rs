@@ -8,5 +8,7 @@ async fn main() {
     let args = cli::Args::parse();
 
     let client = github::Client::new(args);
-    client.get_un_merged_commits().await.unwrap();
+    let response = client.get_un_merged_commits().await;
+    let prs = client.extract_pr_info(response);
+    println!("PRs: {:#?}", prs);
 }

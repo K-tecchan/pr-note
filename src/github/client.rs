@@ -1,7 +1,11 @@
 use graphql_client::{self, GraphQLQuery};
 use reqwest::{self, header};
+use std::collections::HashSet;
 
 use super::graphql::{get_un_merged_commits, GetUnMergedCommits};
+
+type GitHubGraphQLResponse =
+    Result<graphql_client::Response<get_un_merged_commits::ResponseData>, reqwest::Error>;
 
 #[derive(Debug)]
 pub struct Client {
@@ -11,6 +15,14 @@ pub struct Client {
     base: String,
     head: String,
     token: String,
+}
+
+#[derive(Debug)]
+pub struct PullRequest {
+    pub author: String,
+    pub number: i64,
+    pub title: String,
+    pub body: String,
 }
 
 impl Client {
@@ -25,9 +37,46 @@ impl Client {
         }
     }
 
-    pub async fn get_un_merged_commits(
-        &self,
-    ) -> Result<graphql_client::Response<get_un_merged_commits::ResponseData>, reqwest::Error> {
+    pub fn extract_pr_info(&self, data: GitHubGraphQLResponse) -> Vec<PullRequest> {
+        let mut prs = Vec::new();
+        let mut seen = HashSet::new();
+
+        let data = match data {
+            Ok(response) => response.data.unwrap(),
+            Err(_) => return prs,
+        };
+
+        let commits = opt_ref(&data.repository)
+            .and_then(|r| opt_ref(&r.ref_))
+            .and_then(|r| opt_ref(&r.compare))
+            .and_then(|c| opt_ref(&c.commits.nodes));
+
+        for commit in commits.into_iter().flatten().flatten() {
+            let pr_nodes =
+                opt_ref(&commit.associated_pull_requests).and_then(|apr| opt_ref(&apr.nodes));
+
+            for pr in pr_nodes.into_iter().flatten().flatten() {
+                if !seen.insert(pr.number) {
+                    continue;
+                }
+
+                prs.push(PullRequest {
+                    author: pr
+                        .author
+                        .as_ref()
+                        .map(|a| a.login.clone())
+                        .unwrap_or_else(|| "unknown".to_string()),
+                    number: pr.number,
+                    title: pr.title.clone(),
+                    body: pr.body.clone(),
+                });
+            }
+        }
+
+        prs
+    }
+
+    pub async fn get_un_merged_commits(&self) -> GitHubGraphQLResponse {
         let Client {
             host,
             owner,
@@ -61,9 +110,13 @@ impl Client {
             .json::<graphql_client::Response<get_un_merged_commits::ResponseData>>()
             .await?;
 
-        println!("Response: {:#?}", response);
+        // println!("Response: {:#?}", response);
         Ok(response)
     }
+}
+
+fn opt_ref<T>(opt: &Option<T>) -> Option<&T> {
+    opt.as_ref()
 }
 
 #[cfg(test)]
