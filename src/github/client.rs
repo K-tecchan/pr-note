@@ -1,5 +1,6 @@
 use graphql_client::{self, GraphQLQuery};
 use reqwest::{self, header};
+use serde_json::json;
 use std::collections::HashSet;
 
 use super::graphql::{get_un_merged_commits, GetUnMergedCommits};
@@ -35,6 +36,75 @@ impl Client {
             head: args.head,
             token: args.token,
         }
+    }
+
+    pub async fn upsert_pull_request(&self) -> Result<(), reqwest::Error> {
+        let Client {
+            host,
+            owner,
+            repo,
+            base,
+            head,
+            token,
+        } = self;
+
+        let client = reqwest::Client::new();
+        let base_url = if host == "api.github.com" {
+            format!("https://{host}/repos/{owner}/{repo}")
+        } else {
+            format!("https://{host}/api/v3/repos/{owner}/{repo}")
+        };
+        let list_url = format!("{base_url}/pulls?head={owner}:{head}&base={base}&state=open");
+        let existing: Vec<serde_json::Value> = client
+            .get(&list_url)
+            .header(header::USER_AGENT, "pr-note")
+            .header(header::AUTHORIZATION, format!("Bearer {token}"))
+            .send()
+            .await?
+            .json()
+            .await?;
+
+        if let Some(pr) = existing.first() {
+            let number = pr["number"].as_i64().unwrap();
+            let patch_url = format!("{base_url}/pulls/{number}");
+
+            let res: serde_json::Value = client
+                .patch(&patch_url)
+                .bearer_auth(token)
+                .header(header::USER_AGENT, "pr-note")
+                .json(&json!({
+                    "title": "Updated Pull Request",
+                    "body": "This pull request has been updated.",
+                    "state": "open"
+                }))
+                .send()
+                .await?
+                .json()
+                .await?;
+
+            print!("Updated PR: {}", res["html_url"]);
+        } else {
+            let create_url = format!("{base_url}/pulls");
+
+            let res: serde_json::Value = client
+                .post(&create_url)
+                .bearer_auth(token)
+                .header(header::USER_AGENT, "pr-note")
+                .json(&json!({
+                    "title": "New Pull Request",
+                    "head": head,
+                    "base": base,
+                    "body": "This is a new pull request created by pr-note."
+                }))
+                .send()
+                .await?
+                .json()
+                .await?;
+
+            print!("Created PR: {}", res["html_url"]);
+        }
+
+        Ok(())
     }
 
     pub fn extract_pr_info(&self, data: GitHubGraphQLResponse) -> Vec<PullRequest> {

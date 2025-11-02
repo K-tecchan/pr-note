@@ -11,4 +11,5 @@ async fn main() {
     let response = client.get_un_merged_commits().await;
     let prs = client.extract_pr_info(response);
     println!("PRs: {:#?}", prs);
+    client.upsert_pull_request().await.unwrap();
 }
