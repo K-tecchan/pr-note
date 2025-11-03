@@ -17,6 +17,7 @@ pub struct Client {
     base: String,
     head: String,
     token: String,
+    commits: i64,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -36,6 +37,7 @@ impl Client {
             base: args.base,
             head: args.head,
             token: args.token,
+            commits: args.commits,
         }
     }
 
@@ -47,6 +49,7 @@ impl Client {
             base,
             head,
             token,
+            ..
         } = self;
 
         let client = reqwest::Client::new();
@@ -155,6 +158,7 @@ impl Client {
             base,
             head,
             token,
+            commits,
         } = self;
 
         let variables = get_un_merged_commits::Variables {
@@ -162,6 +166,7 @@ impl Client {
             repo: repo.clone(),
             base: base.clone(),
             head: head.clone(),
+            commits: *commits,
         };
 
         let client = reqwest::Client::new();
@@ -203,6 +208,7 @@ mod tests {
             base: "main".to_string(),
             head: "feature-branch".to_string(),
             token: "your_github_token".to_string(),
+            commits: 1000,
         };
 
         let client = Client::new(args);
@@ -212,6 +218,7 @@ mod tests {
         assert_eq!(client.base, "main");
         assert_eq!(client.head, "feature-branch");
         assert_eq!(client.token, "your_github_token");
+        assert_eq!(client.commits, 1000);
     }
 
     #[tokio::test]
@@ -223,6 +230,7 @@ mod tests {
             base: "main".to_string(),
             head: "feature-branch".to_string(),
             token: "your_github_token".to_string(),
+            commits: 1,
         });
 
         let response = client.get_un_merged_commits().await;
