@@ -38,6 +38,11 @@ pub struct Args {
     /// Number of commits retrieved per request when checking unmerged commits
     #[arg(long, env = "COMMITS", value_parser = clap::value_parser!(i64).range(1..), default_value_t = 100)]
     pub commits: i64,
+
+    /// Dry run mode
+    /// With this option, no PR will be created or updated, only output the generated PR body to stdout
+    #[arg(short, long = "dry-run", env = "DRY_RUN", default_value_t = false)]
+    pub dry_run: bool,
 }
 
 #[cfg(test)]
@@ -70,6 +75,7 @@ mod tests {
             "./custom/template.md",
             "--commits",
             "1000",
+            "--dry-run",
         ]);
 
         assert_eq!(args.host, "sample.github.enterprise");
@@ -80,6 +86,7 @@ mod tests {
         assert_eq!(args.token, "ghp_exampletoken1234567890");
         assert_eq!(args.template_path, "./custom/template.md");
         assert_eq!(args.commits, 1000);
+        assert!(args.dry_run);
     }
 
     #[test]
@@ -101,6 +108,7 @@ mod tests {
         assert_eq!(args.host, "api.github.com");
         assert_eq!(args.template_path, "src/doc/template.md");
         assert_eq!(args.commits, 100);
+        assert!(!args.dry_run);
     }
 
     #[test]
@@ -113,6 +121,7 @@ mod tests {
         std::env::set_var("GITHUB_API_TOKEN", "env_exampletoken0987654321");
         std::env::set_var("TEMPLATE_PATH", "env/src/doc/template.md");
         std::env::set_var("COMMITS", "50");
+        std::env::set_var("DRY_RUN", "true");
 
         let args = Args::parse_from(["pr-note"]);
 
@@ -124,6 +133,7 @@ mod tests {
         assert_eq!(args.token, "env_exampletoken0987654321");
         assert_eq!(args.template_path, "env/src/doc/template.md");
         assert_eq!(args.commits, 50);
+        assert!(args.dry_run);
 
         std::env::remove_var("GITHUB_HOST");
         std::env::remove_var("REPO_OWNER");
@@ -133,5 +143,6 @@ mod tests {
         std::env::remove_var("GITHUB_API_TOKEN");
         std::env::remove_var("TEMPLATE_PATH");
         std::env::remove_var("COMMITS");
+        std::env::remove_var("DRY_RUN");
     }
 }

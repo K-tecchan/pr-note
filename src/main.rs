@@ -19,5 +19,8 @@ async fn main() {
         .unwrap();
     let body = doc.render_body(&args.template_path ,&prs).unwrap();
     println!("Generated PR List:\n{}", body);
-    client.upsert_pull_request(&title, &body).await.unwrap();
+
+    if !args.dry_run {
+        client.upsert_pull_request(&title, &body).await.unwrap();
+    }
 }

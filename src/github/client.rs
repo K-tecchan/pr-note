@@ -211,6 +211,7 @@ mod tests {
             token: "your_github_token".to_string(),
             template_path: "src/doc/template.md".to_string(),
             commits: 1000,
+            dry_run: false,
         };
 
         let client = Client::new(args);
@@ -234,6 +235,7 @@ mod tests {
             token: "your_github_token".to_string(),
             template_path: "src/doc/template.md".to_string(),
             commits: 1,
+            dry_run: false,
         });
 
         let response = client.get_un_merged_commits().await;
