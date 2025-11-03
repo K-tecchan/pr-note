@@ -8,7 +8,7 @@ pub struct Doc {
 impl Doc {
     pub fn new() -> Self {
         Doc {
-            tera: Tera::new("src/doc/*").unwrap(),
+            tera: Tera::default(),
         }
     }
 
@@ -17,9 +17,17 @@ impl Doc {
         self.tera.render("title", &Context::new())
     }
 
-    pub fn render_body(&self, prs: &Vec<crate::github::PullRequest>) -> Result<String> {
+    pub fn render_body(
+        &mut self,
+        template_path: &str,
+        prs: &Vec<crate::github::PullRequest>,
+    ) -> Result<String> {
+        self.tera
+            .add_template_file(template_path, Some("template"))
+            .unwrap();
+
         let mut context = Context::new();
         context.insert("prs", prs);
-        self.tera.render("template.md", &context)
+        self.tera.render("template", &context)
     }
 }

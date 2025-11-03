@@ -159,6 +159,7 @@ impl Client {
             head,
             token,
             commits,
+            ..
         } = self;
 
         let variables = get_un_merged_commits::Variables {
@@ -208,6 +209,7 @@ mod tests {
             base: "main".to_string(),
             head: "feature-branch".to_string(),
             token: "your_github_token".to_string(),
+            template_path: "src/doc/template.md".to_string(),
             commits: 1000,
         };
 
@@ -230,6 +232,7 @@ mod tests {
             base: "main".to_string(),
             head: "feature-branch".to_string(),
             token: "your_github_token".to_string(),
+            template_path: "src/doc/template.md".to_string(),
             commits: 1,
         });
 

@@ -9,7 +9,7 @@ mod github;
 async fn main() {
     let args = cli::Args::parse();
 
-    let client = github::Client::new(args);
+    let client = github::Client::new(args.clone());
     let response = client.get_un_merged_commits().await;
     let prs = client.extract_pr_info(response);
     println!("PRs: {:#?}", prs);
@@ -17,7 +17,7 @@ async fn main() {
     let title = doc
         .render_title(Local::now().format("%Y-%m-%d").to_string().as_str())
         .unwrap();
-    let body = doc.render_body(&prs).unwrap();
+    let body = doc.render_body(&args.template_path ,&prs).unwrap();
     println!("Generated PR List:\n{}", body);
     client.upsert_pull_request(&title, &body).await.unwrap();
 }
