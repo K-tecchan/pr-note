@@ -1,5 +1,6 @@
 use graphql_client::{self, GraphQLQuery};
 use reqwest::{self, header};
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::collections::HashSet;
 
@@ -18,7 +19,7 @@ pub struct Client {
     token: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct PullRequest {
     pub author: String,
     pub number: i64,
@@ -38,7 +39,7 @@ impl Client {
         }
     }
 
-    pub async fn upsert_pull_request(&self) -> Result<(), reqwest::Error> {
+    pub async fn upsert_pull_request(&self, title: &str, body: &str) -> Result<(), reqwest::Error> {
         let Client {
             host,
             owner,
@@ -73,8 +74,8 @@ impl Client {
                 .bearer_auth(token)
                 .header(header::USER_AGENT, "pr-note")
                 .json(&json!({
-                    "title": "Updated Pull Request",
-                    "body": "This pull request has been updated.",
+                    "title": format!("Release {}", title),
+                    "body": format!("Created PR by pr-note.\n\n{}", body),
                     "state": "open"
                 }))
                 .send()
@@ -94,7 +95,7 @@ impl Client {
                     "title": "New Pull Request",
                     "head": head,
                     "base": base,
-                    "body": "This is a new pull request created by pr-note."
+                    "body": format!("This is a new pull request created by pr-note.\n\n{}", body)
                 }))
                 .send()
                 .await?

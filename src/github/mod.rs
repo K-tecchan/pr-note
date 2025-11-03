@@ -1,4 +1,4 @@
 mod client;
 mod graphql;
 
-pub use client::Client;
+pub use client::{Client, PullRequest};
