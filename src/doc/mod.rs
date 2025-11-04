@@ -12,12 +12,7 @@ impl Doc {
         }
     }
 
-    pub fn render_title(&mut self, title: &str) -> Result<String> {
-        self.tera.add_raw_template("title", title).unwrap();
-        self.tera.render("title", &Context::new())
-    }
-
-    pub fn render_body(
+    pub fn render(
         &mut self,
         template_path: &str,
         prs: &Vec<crate::github::PullRequest>,

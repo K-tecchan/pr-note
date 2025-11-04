@@ -41,7 +41,7 @@ impl Client {
         }
     }
 
-    pub async fn upsert_pull_request(&self, title: &str, body: &str) -> Result<(), reqwest::Error> {
+    pub async fn upsert_pull_request(&self, text: &str) -> Result<(), reqwest::Error> {
         let Client {
             host,
             owner,
@@ -68,6 +68,10 @@ impl Client {
             .json()
             .await?;
 
+        let mut text = text.splitn(2, "\n");
+        let title = text.next().unwrap_or("Release");
+        let body = text.next().unwrap_or("");
+
         if let Some(pr) = existing.first() {
             let number = pr["number"].as_i64().unwrap();
             let patch_url = format!("{base_url}/pulls/{number}");
@@ -77,16 +81,16 @@ impl Client {
                 .bearer_auth(token)
                 .header(header::USER_AGENT, "pr-note")
                 .json(&json!({
-                    "title": format!("Release {}", title),
-                    "body": format!("Created PR by pr-note.\n\n{}", body),
-                    "state": "open"
+                    "title": title,
+                    "body": body,
+                    "state": "open",
                 }))
                 .send()
                 .await?
                 .json()
                 .await?;
 
-            print!("Updated PR: {}", res["html_url"]);
+            println!("Updated PR: {}", res["html_url"]);
         } else {
             let create_url = format!("{base_url}/pulls");
 
@@ -95,17 +99,17 @@ impl Client {
                 .bearer_auth(token)
                 .header(header::USER_AGENT, "pr-note")
                 .json(&json!({
-                    "title": "New Pull Request",
+                    "title": title,
                     "head": head,
                     "base": base,
-                    "body": format!("This is a new pull request created by pr-note.\n\n{}", body)
+                    "body": body,
                 }))
                 .send()
                 .await?
                 .json()
                 .await?;
 
-            print!("Created PR: {}", res["html_url"]);
+            println!("Created PR: {}", res["html_url"]);
         }
 
         Ok(())

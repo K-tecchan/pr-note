@@ -1,4 +1,3 @@
-use chrono::Local;
 use clap::Parser;
 
 mod cli;
@@ -13,14 +12,12 @@ async fn main() {
     let response = client.get_un_merged_commits().await;
     let prs = client.extract_pr_info(response);
     println!("PRs: {:#?}", prs);
+
     let mut doc = doc::Doc::new();
-    let title = doc
-        .render_title(Local::now().format("%Y-%m-%d").to_string().as_str())
-        .unwrap();
-    let body = doc.render_body(&args.template_path ,&prs).unwrap();
-    println!("Generated PR List:\n{}", body);
+    let text = doc.render(&args.template_path, &prs).unwrap();
+    println!("Generated PR List:\n{}", text);
 
     if !args.dry_run {
-        client.upsert_pull_request(&title, &body).await.unwrap();
+        client.upsert_pull_request(&text).await.unwrap();
     }
 }
