@@ -12,13 +12,18 @@ query GetUnMergedCommits(
           nodes {
             associatedPullRequests(first: 1) {
               nodes {
+                number
+                title
+                body
                 author {
                   login
                   __typename
                 }
-                number
-                title
-                body
+                labels(first: 5, orderBy: { field: NAME, direction: ASC }) {
+                  nodes {
+                    name
+                  }
+                }
               }
             }
           }

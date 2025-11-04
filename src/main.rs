@@ -14,7 +14,7 @@ async fn main() {
     println!("PRs: {:#?}", prs);
 
     let mut doc = doc::Doc::new();
-    let text = doc.render(&args.template_path, &prs).unwrap();
+    let text = doc.render(&args, &prs).unwrap();
     println!("Generated PR List:\n{}", text);
 
     if !args.dry_run {

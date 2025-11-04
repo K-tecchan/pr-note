@@ -1,4 +1,4 @@
-use clap::Parser;
+use clap::{Parser, ValueEnum};
 
 #[derive(Debug, Clone, Parser)]
 #[command(version, about, long_about = None)]
@@ -31,7 +31,7 @@ pub struct Args {
     #[arg(
         long = "template-path",
         env = "TEMPLATE_PATH",
-        default_value = "src/doc/template.md"
+        default_value = "src/doc/template.tera"
     )]
     pub template_path: String,
 
@@ -39,10 +39,21 @@ pub struct Args {
     #[arg(long, env = "COMMITS", value_parser = clap::value_parser!(i64).range(1..), default_value_t = 100)]
     pub commits: i64,
 
+    /// Grouping flag for unmerged PRs
+    /// Options are 'label' or 'title'
+    #[arg(long, env = "GROUP_BY")]
+    pub group_by: Option<Group>,
+
     /// Dry run mode
     /// With this option, no PR will be created or updated, only output the generated PR body to stdout
     #[arg(short, long = "dry-run", env = "DRY_RUN", default_value_t = false)]
     pub dry_run: bool,
+}
+
+#[derive(Debug, Clone, ValueEnum)]
+pub enum Group {
+    Label,
+    Title,
 }
 
 #[cfg(test)]
@@ -106,7 +117,7 @@ mod tests {
         ]);
 
         assert_eq!(args.host, "api.github.com");
-        assert_eq!(args.template_path, "src/doc/template.md");
+        assert_eq!(args.template_path, "src/doc/template.tera");
         assert_eq!(args.commits, 100);
         assert!(!args.dry_run);
     }

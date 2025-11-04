@@ -1,6 +1,6 @@
 use graphql_client::{self, GraphQLQuery};
 use reqwest::{self, header};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use serde_json::json;
 use std::collections::HashSet;
 
@@ -20,9 +20,10 @@ pub struct Client {
     commits: i64,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize)]
 pub struct PullRequest {
     pub author: String,
+    pub labels: Vec<String>,
     pub number: i64,
     pub title: String,
     pub body: String,
@@ -144,6 +145,18 @@ impl Client {
                         .as_ref()
                         .map(|a| a.login.clone())
                         .unwrap_or_else(|| "unknown".to_string()),
+                    labels: pr
+                        .labels
+                        .as_ref()
+                        .and_then(|l| opt_ref(&l.nodes))
+                        .map(|nodes| {
+                            nodes
+                                .iter()
+                                .flatten()
+                                .map(|label| label.name.clone())
+                                .collect()
+                        })
+                        .unwrap_or_else(Vec::new),
                     number: pr.number,
                     title: pr.title.clone(),
                     body: pr.body.clone(),
@@ -215,6 +228,7 @@ mod tests {
             token: "your_github_token".to_string(),
             template_path: "src/doc/template.md".to_string(),
             commits: 1000,
+            group_by: None,
             dry_run: false,
         };
 
@@ -239,6 +253,7 @@ mod tests {
             token: "your_github_token".to_string(),
             template_path: "src/doc/template.md".to_string(),
             commits: 1,
+            group_by: None,
             dry_run: false,
         });
 

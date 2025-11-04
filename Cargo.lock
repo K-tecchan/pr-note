@@ -1205,6 +1205,7 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "graphql_client",
+ "regex",
  "reqwest",
  "serde",
  "serde_json",
