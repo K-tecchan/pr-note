@@ -3,7 +3,9 @@ use clap::{Parser, ValueEnum};
 #[derive(Debug, Clone, Parser)]
 #[command(version, about, long_about = None)]
 pub struct Args {
-    /// API host URL
+    /// API host domain for GitHub
+    /// Default is "api.github.com"
+    /// For GitHub Enterprise, set your enterprise host domain
     #[arg(long, env = "GITHUB_HOST", default_value = "api.github.com")]
     pub host: String,
 
@@ -15,7 +17,7 @@ pub struct Args {
     #[arg(long, env = "REPO_NAME")]
     pub repo: String,
 
-    /// The name of the base(PR target) branch
+    /// The name of the base branch
     #[arg(long, env = "BASE_BRANCH")]
     pub base: String,
 
@@ -24,6 +26,10 @@ pub struct Args {
     pub head: String,
 
     /// GitHub API token
+    /// Make sure to set the token with appropriate repository permissions:
+    /// - Contents: read
+    /// - Metadata: read
+    /// - Pull requests: write
     #[arg(long, env = "GITHUB_API_TOKEN", hide_env_values = true)]
     pub token: String,
 
@@ -36,6 +42,7 @@ pub struct Args {
     pub template_path: String,
 
     /// Number of commits retrieved per request when checking unmerged commits
+    /// Default is 100
     #[arg(long, env = "COMMITS", value_parser = clap::value_parser!(i64).range(1..), default_value_t = 100)]
     pub commits: i64,
 
@@ -45,7 +52,7 @@ pub struct Args {
     pub group_by: Option<Group>,
 
     /// Dry run mode
-    /// With this option, no PR will be created or updated, only output the generated PR body to stdout
+    /// With this option, no PR will be created or updated, only output the generated text to stdout
     #[arg(short, long = "dry-run", env = "DRY_RUN", default_value_t = false)]
     pub dry_run: bool,
 }

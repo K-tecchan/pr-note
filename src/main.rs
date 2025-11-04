@@ -11,13 +11,19 @@ async fn main() {
     let client = github::Client::new(args.clone());
     let response = client.get_un_merged_commits().await;
     let prs = client.extract_pr_info(response);
-    println!("PRs: {:#?}", prs);
+    if prs.is_empty() {
+        println!(
+            "No unmerged PRs found between {} and {}.",
+            args.base, args.head
+        );
+        return;
+    }
 
     let mut doc = doc::Doc::new();
     let text = doc.render(&args, &prs).unwrap();
-    println!("Generated PR List:\n{}", text);
+    println!("{text}");
 
-    if !args.dry_run {
-        client.upsert_pull_request(&text).await.unwrap();
+    if !args.dry_run && client.upsert_pull_request(&text).await.is_err() {
+        eprintln!("Failed to create or update the PR.");
     }
 }

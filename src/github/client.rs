@@ -63,7 +63,7 @@ impl Client {
         let existing: Vec<serde_json::Value> = client
             .get(&list_url)
             .header(header::USER_AGENT, "pr-note")
-            .header(header::AUTHORIZATION, format!("Bearer {token}"))
+            .bearer_auth(token)
             .send()
             .await?
             .json()
@@ -79,8 +79,8 @@ impl Client {
 
             let res: serde_json::Value = client
                 .patch(&patch_url)
-                .bearer_auth(token)
                 .header(header::USER_AGENT, "pr-note")
+                .bearer_auth(token)
                 .json(&json!({
                     "title": title,
                     "body": body,
@@ -97,8 +97,8 @@ impl Client {
 
             let res: serde_json::Value = client
                 .post(&create_url)
-                .bearer_auth(token)
                 .header(header::USER_AGENT, "pr-note")
+                .bearer_auth(token)
                 .json(&json!({
                     "title": title,
                     "head": head,
@@ -121,8 +121,18 @@ impl Client {
         let mut seen = HashSet::new();
 
         let data = match data {
-            Ok(response) => response.data.unwrap(),
-            Err(_) => return prs,
+            Ok(response) => {
+                if response.data.is_none() {
+                    eprintln!("GraphQL errors occurred. Could not extract PR info.");
+                    return prs;
+                }
+
+                response.data.unwrap()
+            }
+            Err(_) => {
+                eprintln!("Failed to get a valid response from GitHub GraphQL API.");
+                return prs;
+            }
         };
 
         let commits = opt_ref(&data.repository)
@@ -197,14 +207,13 @@ impl Client {
         let response = client
             .post(&url)
             .header(header::USER_AGENT, "pr-note")
-            .header(header::AUTHORIZATION, format!("Bearer {token}"))
+            .bearer_auth(token)
             .json(&request_body)
             .send()
             .await?
             .json::<graphql_client::Response<get_un_merged_commits::ResponseData>>()
             .await?;
 
-        // println!("Response: {:#?}", response);
         Ok(response)
     }
 }
