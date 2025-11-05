@@ -64,11 +64,11 @@ For GitHub Enterprise, set your enterprise host domain."
         short = 'p',
         long,
         env = "PR_NOTE_TEMPLATE_PATH",
-        default_value = "src/doc/template.tera",
-        help = "Template file path for PR body.
+        help = "Template file path for PR title and body.
+First line is used as the title, rest as the body.
 If not specified, the default template will be used."
     )]
-    pub template_path: String,
+    pub template_path: Option<String>,
 
     #[arg(
         short,
@@ -145,7 +145,7 @@ mod tests {
         assert_eq!(args.base, "main");
         assert_eq!(args.head, "feature-branch");
         assert_eq!(args.token, "ghp_exampletoken1234567890");
-        assert_eq!(args.template_path, "./custom/template.md");
+        assert_eq!(args.template_path.unwrap(), "./custom/template.md");
         assert_eq!(args.commits, 1000);
         assert!(args.dry_run);
     }
@@ -167,7 +167,7 @@ mod tests {
         ]);
 
         assert_eq!(args.host, "api.github.com");
-        assert_eq!(args.template_path, "src/doc/template.tera");
+        assert!(args.template_path.is_none());
         assert_eq!(args.commits, 100);
         assert!(!args.dry_run);
     }

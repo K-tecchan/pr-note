@@ -18,8 +18,13 @@ impl Doc {
     }
 
     pub fn render(&mut self, args: &Args, prs: &[PullRequest]) -> Result<String> {
+        let template_path = match &args.template_path {
+            Some(path) => path,
+            None => "src/doc/template.tera",
+        };
+
         self.tera
-            .add_template_file(args.template_path.clone(), Some("template"))
+            .add_template_file(template_path, Some("template"))
             .unwrap();
 
         let prs = prs
@@ -102,7 +107,7 @@ mod tests {
             base: "main".to_string(),
             head: "feature".to_string(),
             token: "token".to_string(),
-            template_path: "src/doc/template.tera".to_string(),
+            template_path: Some("src/doc/template.tera".to_string()),
             commits: 100,
             group_by: Some(Group::Label),
             dry_run: true,
