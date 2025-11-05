@@ -17,7 +17,6 @@ pub struct Client {
     base: String,
     head: String,
     token: String,
-    commits: i64,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -38,7 +37,6 @@ impl Client {
             base: args.base,
             head: args.head,
             token: args.token,
-            commits: args.commits,
         }
     }
 
@@ -185,7 +183,6 @@ impl Client {
             base,
             head,
             token,
-            commits,
             ..
         } = self;
 
@@ -194,7 +191,6 @@ impl Client {
             repo: repo.clone(),
             base: base.clone(),
             head: head.clone(),
-            commits: *commits,
         };
 
         let client = reqwest::Client::new();
@@ -236,7 +232,6 @@ mod tests {
             head: "feature-branch".to_string(),
             token: "your_github_token".to_string(),
             template_path: Some("src/doc/template.md".to_string()),
-            commits: 1000,
             group_by: None,
             dry_run: false,
         };
@@ -248,7 +243,6 @@ mod tests {
         assert_eq!(client.base, "main");
         assert_eq!(client.head, "feature-branch");
         assert_eq!(client.token, "your_github_token");
-        assert_eq!(client.commits, 1000);
     }
 
     #[tokio::test]
@@ -261,7 +255,6 @@ mod tests {
             head: "feature-branch".to_string(),
             token: "your_github_token".to_string(),
             template_path: Some("src/doc/template.md".to_string()),
-            commits: 1,
             group_by: None,
             dry_run: false,
         });

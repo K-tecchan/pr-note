@@ -73,16 +73,6 @@ If not specified, the default template will be used."
     #[arg(
         short,
         long,
-        env = "PR_NOTE_COMMITS", 
-        value_parser = clap::value_parser!(i64).range(1..),
-        default_value_t = 100,
-        help = "Number of commits to retrieve per request when checking unmerged commits.
-Default is 100.")]
-    pub commits: i64,
-
-    #[arg(
-        short,
-        long,
         env = "PR_NOTE_GROUP_BY",
         help = "Grouping options for unmerged PRs.
 Options are \"label\" or \"title\""
@@ -134,8 +124,6 @@ mod tests {
             "ghp_exampletoken1234567890",
             "--template-path",
             "./custom/template.md",
-            "--commits",
-            "1000",
             "--dry-run",
         ]);
 
@@ -146,7 +134,6 @@ mod tests {
         assert_eq!(args.head, "feature-branch");
         assert_eq!(args.token, "ghp_exampletoken1234567890");
         assert_eq!(args.template_path.unwrap(), "./custom/template.md");
-        assert_eq!(args.commits, 1000);
         assert!(args.dry_run);
     }
 
@@ -168,7 +155,6 @@ mod tests {
 
         assert_eq!(args.host, "api.github.com");
         assert!(args.template_path.is_none());
-        assert_eq!(args.commits, 100);
         assert!(!args.dry_run);
     }
 

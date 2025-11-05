@@ -108,7 +108,6 @@ mod tests {
             head: "feature".to_string(),
             token: "token".to_string(),
             template_path: Some("src/doc/template.tera".to_string()),
-            commits: 100,
             group_by: Some(Group::Label),
             dry_run: true,
         };
