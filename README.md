@@ -41,13 +41,13 @@ In the template, the `prs` object is available, which is the list of pull reques
 - `title`: Pull request title
 - `body`: Pull request body as markdown
 - `labels`: List of labels attached to the pull request
-- `group`: Group name if `--group-by` option is used, otherwise "ungrouped"
+- `group`: Group name if `--group-by` option is used, otherwise ""
 
 `group` is determined based on the value of `--group-by` option:
 
 - If `label` is specified, labels attached to the pull request are arranged in lexicographical order and joined with " / " to form the group name. If no labels are attached, "others" is used.
 - If `title` is specified, one or more \[bracket\] segments at the beginning of the title are arranged in lexicographical order and joined with " / " to form the group name. If no bracketed segments are found, "others" is used.
-- If not specified, all pull requests are considered as "ungrouped".
+- If not specified, all pull requests are considered as "".
 
 ## Installation
 

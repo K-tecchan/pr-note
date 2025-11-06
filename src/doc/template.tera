@@ -1,7 +1,7 @@
 Release {{ now() | date(format="%Y-%m-%d") }}
 
 {% for group, grouped_prs in prs | group_by(attribute="group") %}
-  {%- if group != "ungrouped" -%}
+  {%- if group != "" -%}
 ## {{ group }}
   {%- endif -%}
   {% for pr in grouped_prs %}

@@ -79,7 +79,7 @@ impl PullRequest {
                     "others".to_string()
                 }
             }
-            None => "ungrouped".to_string(),
+            None => "".to_string(),
         };
 
         ExtendedPullRequest {
