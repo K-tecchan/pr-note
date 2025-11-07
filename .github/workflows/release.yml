@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+  pull_request:
 
 env:
   CARGO_TERM_COLOR: always
@@ -35,3 +36,10 @@ jobs:
 
       - name: Build for ${{ matrix.target }}
         run: cross build --release --target ${{ matrix.target }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v5
+        with:
+          name: pr-note-${{ matrix.target }}
+          path: target/${{ matrix.target }}/release/pr-note${{ matrix.target == 'x86_64-pc-windows-msvc' && '.exe' || '' }}
+          retention-days: 3
