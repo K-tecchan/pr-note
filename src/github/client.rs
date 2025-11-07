@@ -45,7 +45,7 @@ impl Client {
         }
     }
 
-    pub async fn upsert_pull_request(&self, text: &str) -> Result<(), reqwest::Error> {
+    pub async fn upsert_pull_request(&self, note: &str) -> Result<(), reqwest::Error> {
         let Client {
             host,
             owner,
@@ -71,9 +71,9 @@ impl Client {
             .json()
             .await?;
 
-        let mut text = text.splitn(2, "\n");
-        let title = text.next().unwrap_or("Release");
-        let body = text.next().unwrap_or("");
+        let mut note = note.splitn(2, "\n");
+        let title = note.next().unwrap_or("Release");
+        let body = note.next().unwrap_or("");
 
         if let Some(pr) = existing.first() {
             let number = pr["number"].as_i64().unwrap();
