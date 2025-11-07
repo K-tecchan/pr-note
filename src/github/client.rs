@@ -5,8 +5,8 @@ use std::collections::HashSet;
 
 use super::graphql::{get_un_merged_commits, GetUnMergedCommits};
 
-type GitHubGraphQLResponse =
-    Result<graphql_client::Response<get_un_merged_commits::ResponseData>, reqwest::Error>;
+type GetUnMergedCommitsResponse = graphql_client::Response<get_un_merged_commits::ResponseData>;
+type GetUnMergedCommitsResult = Result<GetUnMergedCommitsResponse, reqwest::Error>;
 
 #[derive(Debug)]
 pub struct Client {
@@ -117,7 +117,7 @@ impl Client {
         Ok(())
     }
 
-    pub fn extract_pr_info(&self, data: GitHubGraphQLResponse) -> Vec<PullRequest> {
+    pub fn extract_pr_info(&self, data: GetUnMergedCommitsResult) -> Vec<PullRequest> {
         let mut prs = Vec::new();
         let mut seen = HashSet::new();
 
@@ -178,7 +178,7 @@ impl Client {
         prs
     }
 
-    pub async fn get_un_merged_commits(&self) -> GitHubGraphQLResponse {
+    pub async fn get_un_merged_commits(&self) -> GetUnMergedCommitsResult {
         let Client {
             host,
             owner,
@@ -202,14 +202,14 @@ impl Client {
             format!("https://{host}/api/graphql")
         };
         let request_body = GetUnMergedCommits::build_query(variables);
-        let response = self
+        let response: GetUnMergedCommitsResponse = self
             .client
             .post(&url)
             .bearer_auth(token)
             .json(&request_body)
             .send()
             .await?
-            .json::<graphql_client::Response<get_un_merged_commits::ResponseData>>()
+            .json()
             .await?;
 
         Ok(response)

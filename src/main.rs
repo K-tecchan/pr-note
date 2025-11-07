@@ -9,8 +9,8 @@ async fn main() {
     let args = cli::Args::parse();
 
     let client = github::Client::new(args.clone());
-    let response = client.get_un_merged_commits().await;
-    let prs = client.extract_pr_info(response);
+    let commits = client.get_un_merged_commits().await;
+    let prs = client.extract_pr_info(commits);
     if prs.is_empty() {
         println!(
             "No unmerged PRs found between {} and {}.",
