@@ -123,14 +123,13 @@ impl Client {
         let mut seen = HashSet::new();
 
         let data = match data {
-            Ok(response) => {
-                if response.data.is_none() {
+            Ok(response) => match response.data {
+                Some(data) => data,
+                None => {
                     eprintln!("GraphQL errors occurred. Could not extract PR info.");
                     return prs;
                 }
-
-                response.data.unwrap()
-            }
+            },
             Err(_) => {
                 eprintln!("Failed to get a valid response from GitHub GraphQL API.");
                 return prs;
