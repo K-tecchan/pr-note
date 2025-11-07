@@ -106,14 +106,14 @@ Options:
 
   -g, --group-by <GROUP_BY>
           Grouping options for unmerged PRs.
-          Options are "label" or "title"
+          Options are "label" or "title".
 
           [env: PR_NOTE_GROUP_BY=]
           [possible values: label, title]
 
   -d, --dry-run
           Dry run mode.
-          With this option, no PR will be created or updated, only output the generated text to stdout
+          With this option, no PR will be created or updated, only output the generated text to stdout.
 
           [env: PR_NOTE_DRY_RUN=]
 

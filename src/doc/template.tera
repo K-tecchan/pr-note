@@ -9,6 +9,6 @@ Release {{ now() | date(format="%Y-%m-%d") }}
 - [x] #{{ pr.number }} by @{{ pr.author }}
     {%- else %}
 - [ ] #{{ pr.number }} by @{{ pr.author }}
-    {%- endif %}
+    {%- endif -%}
   {% endfor %}
 {% endfor %}

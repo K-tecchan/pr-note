@@ -1,13 +1,13 @@
+use std::collections::HashSet;
+
 use graphql_client::{self, GraphQLQuery};
-use reqwest::{self, header};
 use serde::Serialize;
 use serde_json::json;
-use std::collections::HashSet;
 
 use super::graphql::{get_un_merged_commits, GetUnMergedCommits};
 
-type GitHubGraphQLResponse =
-    Result<graphql_client::Response<get_un_merged_commits::ResponseData>, reqwest::Error>;
+type GetUnMergedCommitsResponse = graphql_client::Response<get_un_merged_commits::ResponseData>;
+type GetUnMergedCommitsResult = Result<GetUnMergedCommitsResponse, reqwest::Error>;
 
 #[derive(Debug)]
 pub struct Client {
@@ -17,6 +17,7 @@ pub struct Client {
     base: String,
     head: String,
     token: String,
+    client: reqwest::Client,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -37,10 +38,14 @@ impl Client {
             base: args.base,
             head: args.head,
             token: args.token,
+            client: reqwest::ClientBuilder::new()
+                .user_agent("pr-note")
+                .build()
+                .unwrap(),
         }
     }
 
-    pub async fn upsert_pull_request(&self, text: &str) -> Result<(), reqwest::Error> {
+    pub async fn upsert_pull_request(&self, note: &str) -> Result<(), reqwest::Error> {
         let Client {
             host,
             owner,
@@ -51,33 +56,32 @@ impl Client {
             ..
         } = self;
 
-        let client = reqwest::Client::new();
         let base_url = if host == "api.github.com" {
             format!("https://{host}/repos/{owner}/{repo}")
         } else {
             format!("https://{host}/api/v3/repos/{owner}/{repo}")
         };
         let list_url = format!("{base_url}/pulls?head={owner}:{head}&base={base}&state=open");
-        let existing: Vec<serde_json::Value> = client
+        let existing: Vec<serde_json::Value> = self
+            .client
             .get(&list_url)
-            .header(header::USER_AGENT, "pr-note")
             .bearer_auth(token)
             .send()
             .await?
             .json()
             .await?;
 
-        let mut text = text.splitn(2, "\n");
-        let title = text.next().unwrap_or("Release");
-        let body = text.next().unwrap_or("");
+        let mut note = note.splitn(2, "\n");
+        let title = note.next().unwrap_or("Release");
+        let body = note.next().unwrap_or("");
 
         if let Some(pr) = existing.first() {
             let number = pr["number"].as_i64().unwrap();
             let patch_url = format!("{base_url}/pulls/{number}");
 
-            let res: serde_json::Value = client
+            let res: serde_json::Value = self
+                .client
                 .patch(&patch_url)
-                .header(header::USER_AGENT, "pr-note")
                 .bearer_auth(token)
                 .json(&json!({
                     "title": title,
@@ -93,9 +97,9 @@ impl Client {
         } else {
             let create_url = format!("{base_url}/pulls");
 
-            let res: serde_json::Value = client
+            let res: serde_json::Value = self
+                .client
                 .post(&create_url)
-                .header(header::USER_AGENT, "pr-note")
                 .bearer_auth(token)
                 .json(&json!({
                     "title": title,
@@ -114,19 +118,18 @@ impl Client {
         Ok(())
     }
 
-    pub fn extract_pr_info(&self, data: GitHubGraphQLResponse) -> Vec<PullRequest> {
+    pub fn extract_pr_info(&self, data: GetUnMergedCommitsResult) -> Vec<PullRequest> {
         let mut prs = Vec::new();
         let mut seen = HashSet::new();
 
         let data = match data {
-            Ok(response) => {
-                if response.data.is_none() {
+            Ok(response) => match response.data {
+                Some(data) => data,
+                None => {
                     eprintln!("GraphQL errors occurred. Could not extract PR info.");
                     return prs;
                 }
-
-                response.data.unwrap()
-            }
+            },
             Err(_) => {
                 eprintln!("Failed to get a valid response from GitHub GraphQL API.");
                 return prs;
@@ -175,7 +178,7 @@ impl Client {
         prs
     }
 
-    pub async fn get_un_merged_commits(&self) -> GitHubGraphQLResponse {
+    pub async fn get_un_merged_commits(&self) -> GetUnMergedCommitsResult {
         let Client {
             host,
             owner,
@@ -193,21 +196,20 @@ impl Client {
             head: head.clone(),
         };
 
-        let client = reqwest::Client::new();
         let url = if host == "api.github.com" {
             format!("https://{host}/graphql")
         } else {
             format!("https://{host}/api/graphql")
         };
         let request_body = GetUnMergedCommits::build_query(variables);
-        let response = client
+        let response: GetUnMergedCommitsResponse = self
+            .client
             .post(&url)
-            .header(header::USER_AGENT, "pr-note")
             .bearer_auth(token)
             .json(&request_body)
             .send()
             .await?
-            .json::<graphql_client::Response<get_un_merged_commits::ResponseData>>()
+            .json()
             .await?;
 
         Ok(response)

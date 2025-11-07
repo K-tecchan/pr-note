@@ -24,8 +24,7 @@ impl Doc {
         };
 
         self.tera
-            .add_template_file(template_path, Some("template"))
-            .unwrap();
+            .add_template_file(template_path, Some("template"))?;
 
         let prs = prs
             .iter()

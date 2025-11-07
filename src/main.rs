@@ -9,8 +9,8 @@ async fn main() {
     let args = cli::Args::parse();
 
     let client = github::Client::new(args.clone());
-    let response = client.get_un_merged_commits().await;
-    let prs = client.extract_pr_info(response);
+    let commits = client.get_un_merged_commits().await;
+    let prs = client.extract_pr_info(commits);
     if prs.is_empty() {
         println!(
             "No unmerged PRs found between {} and {}.",
@@ -20,10 +20,16 @@ async fn main() {
     }
 
     let mut doc = doc::Doc::new();
-    let text = doc.render(&args, &prs).unwrap();
-    println!("{text}");
+    let note = match doc.render(&args, &prs) {
+        Ok(note) => note,
+        Err(e) => {
+            eprintln!("Failed to render the PR note: {}", e);
+            return;
+        }
+    };
+    println!("{note}");
 
-    if !args.dry_run && client.upsert_pull_request(&text).await.is_err() {
+    if !args.dry_run && client.upsert_pull_request(&note).await.is_err() {
         eprintln!("Failed to create or update the PR.");
     }
 }
