@@ -75,7 +75,7 @@ If not specified, the default template will be used."
         long,
         env = "PR_NOTE_GROUP_BY",
         help = "Grouping options for unmerged PRs.
-Options are \"label\" or \"title\""
+Options are \"label\" or \"title\"."
     )]
     pub group_by: Option<Group>,
 
@@ -85,7 +85,7 @@ Options are \"label\" or \"title\""
         env = "PR_NOTE_DRY_RUN",
         default_value_t = false,
         help = "Dry run mode.
-With this option, no PR will be created or updated, only output the generated text to stdout"
+With this option, no PR will be created or updated, only output the generated text to stdout."
     )]
     pub dry_run: bool,
 }
