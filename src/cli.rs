@@ -157,39 +157,4 @@ mod tests {
         assert!(args.template_path.is_none());
         assert!(!args.dry_run);
     }
-
-    // #[test]
-    // fn cli_parsing_with_env_vars() {
-    //     std::env::set_var("GITHUB_HOST", "env.github.enterprise");
-    //     std::env::set_var("REPO_OWNER", "env-octocat");
-    //     std::env::set_var("REPO_NAME", "Env-Hello-World");
-    //     std::env::set_var("BASE_BRANCH", "env-main");
-    //     std::env::set_var("HEAD_BRANCH", "env-feature-branch");
-    //     std::env::set_var("GITHUB_API_TOKEN", "env_exampletoken0987654321");
-    //     std::env::set_var("TEMPLATE_PATH", "env/src/doc/template.md");
-    //     std::env::set_var("COMMITS", "50");
-    //     std::env::set_var("DRY_RUN", "true");
-
-    //     let args = Args::parse_from(["pr-note"]);
-
-    //     assert_eq!(args.host, "env.github.enterprise");
-    //     assert_eq!(args.owner, "env-octocat");
-    //     assert_eq!(args.repo, "Env-Hello-World");
-    //     assert_eq!(args.base, "env-main");
-    //     assert_eq!(args.head, "env-feature-branch");
-    //     assert_eq!(args.token, "env_exampletoken0987654321");
-    //     assert_eq!(args.template_path, "env/src/doc/template.md");
-    //     assert_eq!(args.commits, 50);
-    //     assert!(args.dry_run);
-
-    //     std::env::remove_var("GITHUB_HOST");
-    //     std::env::remove_var("REPO_OWNER");
-    //     std::env::remove_var("REPO_NAME");
-    //     std::env::remove_var("BASE_BRANCH");
-    //     std::env::remove_var("HEAD_BRANCH");
-    //     std::env::remove_var("GITHUB_API_TOKEN");
-    //     std::env::remove_var("TEMPLATE_PATH");
-    //     std::env::remove_var("COMMITS");
-    //     std::env::remove_var("DRY_RUN");
-    // }
 }
