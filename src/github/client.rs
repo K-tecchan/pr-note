@@ -1,5 +1,4 @@
 use graphql_client::{self, GraphQLQuery};
-use reqwest::{self, header};
 use serde::Serialize;
 use serde_json::json;
 use std::collections::HashSet;
@@ -17,6 +16,7 @@ pub struct Client {
     base: String,
     head: String,
     token: String,
+    client: reqwest::Client,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -37,6 +37,10 @@ impl Client {
             base: args.base,
             head: args.head,
             token: args.token,
+            client: reqwest::ClientBuilder::new()
+                .user_agent("pr-note")
+                .build()
+                .unwrap(),
         }
     }
 
@@ -51,16 +55,15 @@ impl Client {
             ..
         } = self;
 
-        let client = reqwest::Client::new();
         let base_url = if host == "api.github.com" {
             format!("https://{host}/repos/{owner}/{repo}")
         } else {
             format!("https://{host}/api/v3/repos/{owner}/{repo}")
         };
         let list_url = format!("{base_url}/pulls?head={owner}:{head}&base={base}&state=open");
-        let existing: Vec<serde_json::Value> = client
+        let existing: Vec<serde_json::Value> = self
+            .client
             .get(&list_url)
-            .header(header::USER_AGENT, "pr-note")
             .bearer_auth(token)
             .send()
             .await?
@@ -75,9 +78,9 @@ impl Client {
             let number = pr["number"].as_i64().unwrap();
             let patch_url = format!("{base_url}/pulls/{number}");
 
-            let res: serde_json::Value = client
+            let res: serde_json::Value = self
+                .client
                 .patch(&patch_url)
-                .header(header::USER_AGENT, "pr-note")
                 .bearer_auth(token)
                 .json(&json!({
                     "title": title,
@@ -93,9 +96,9 @@ impl Client {
         } else {
             let create_url = format!("{base_url}/pulls");
 
-            let res: serde_json::Value = client
+            let res: serde_json::Value = self
+                .client
                 .post(&create_url)
-                .header(header::USER_AGENT, "pr-note")
                 .bearer_auth(token)
                 .json(&json!({
                     "title": title,
@@ -193,16 +196,15 @@ impl Client {
             head: head.clone(),
         };
 
-        let client = reqwest::Client::new();
         let url = if host == "api.github.com" {
             format!("https://{host}/graphql")
         } else {
             format!("https://{host}/api/graphql")
         };
         let request_body = GetUnMergedCommits::build_query(variables);
-        let response = client
+        let response = self
+            .client
             .post(&url)
-            .header(header::USER_AGENT, "pr-note")
             .bearer_auth(token)
             .json(&request_body)
             .send()
