@@ -30,7 +30,7 @@ pr-note \
 Executing the above command will create a pull request from the head branch to the base branch.
 If a pull request already exists, it will be updated instead.
 
-Pull request body and title can be customized using a template file. The first line of the template file is used as the pull request title, and the rest as the body. [Default](src/doc/template.tera) is used if no template file is specified.
+Pull request body and title can be customized using a template file. The first line of the template file is used as the pull request title, and the rest as the body. [Default template](src/doc/template.tera) is used if no template file is specified.
 
 Template uses [Tera](https://keats.github.io/tera/) syntax.
 

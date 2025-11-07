@@ -18,13 +18,15 @@ impl Doc {
     }
 
     pub fn render(&mut self, args: &Args, prs: &[PullRequest]) -> Result<String> {
-        let template_path = match &args.template_path {
-            Some(path) => path,
-            None => "src/doc/template.tera",
+        match &args.template_path {
+            Some(path) => {
+                self.tera.add_template_file(path, Some("template"))?;
+            }
+            None => {
+                let default_template = include_str!("./template.tera");
+                self.tera.add_raw_template("template", default_template)?;
+            }
         };
-
-        self.tera
-            .add_template_file(template_path, Some("template"))?;
 
         let prs = prs
             .iter()
