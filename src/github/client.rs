@@ -1,7 +1,8 @@
+use std::collections::HashSet;
+
 use graphql_client::{self, GraphQLQuery};
 use serde::Serialize;
 use serde_json::json;
-use std::collections::HashSet;
 
 use super::graphql::{get_un_merged_commits, GetUnMergedCommits};
 
