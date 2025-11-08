@@ -1,4 +1,4 @@
-name: Publish NPM Package
+name: Publish npm Package
 
 on:
   push:
@@ -92,4 +92,41 @@ jobs:
         shell: bash
         run: |
           cd ${{ steps.prepare-package.outputs.target_dir }}
+          npm publish --access public --dry-run
+
+  publish-pr-note:
+    name: Publish @pr-note/pr-note
+    needs: build-and-publish
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org
+          cache: npm
+          cache-dependency-path: packages/@pr-note/pr-note/package.json
+
+      - name: Verify main package
+        id: verify-main-package
+        shell: bash
+        run: |
+          PACKAGE_DIR="packages/@pr-note/pr-note"
+
+          if [ ! -d ${PACKAGE_DIR} ]; then
+            echo "${PACKAGE_DIR} not found"
+            exit 1
+          fi
+
+          ls -la ${PACKAGE_DIR}
+          echo "package_dir=${PACKAGE_DIR}" >> $GITHUB_OUTPUT
+
+      - name: Dry run publish main package
+        shell: bash
+        run: |
+          cd ${{ steps.verify-main-package.outputs.package_dir }}
           npm publish --access public --dry-run
