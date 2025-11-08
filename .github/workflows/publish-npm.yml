@@ -72,7 +72,7 @@ jobs:
           TARGET_DIR="dist/${{ matrix.code-target }}"
 
           mkdir -p ${TARGET_DIR}
-          cp -r packages/@pr-note/pr-note${{ matrix.code-target }}/* ${TARGET_DIR}
+          cp -r packages/@pr-note/pr-note-${{ matrix.code-target }}/* ${TARGET_DIR}
 
           BINARY_PATH="${{ steps.verify-binary.outputs.binary_path }}"
           cp ${BINARY_PATH} ${TARGET_DIR}
