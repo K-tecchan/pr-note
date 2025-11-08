@@ -1,24 +1,32 @@
 #!/usr/bin/env node
 
 import { spawnSync } from "node:child_process";
-import { dirname, resolve } from "node:path";
 import { arch, platform } from "node:process";
-import { fileURLToPath } from "node:url";
 
 const PLATFORMS = {
   darwin: {
-    arm64: "pr-note-darwin-arm64/pr-note",
-    x64: "pr-note-darwin-x64/pr-note",
+    arm64: "@pr-note/pr-note-darwin-arm64/pr-note",
+    x64: "@pr-note/pr-note-darwin-x64/pr-note",
   },
   linux: {
-    arm64: "pr-note-linux-arm64/pr-note",
-    x64: "pr-note-linux-x64/pr-note",
+    arm64: "@pr-note/pr-note-linux-arm64/pr-note",
+    x64: "@pr-note/pr-note-linux-x64/pr-note",
   },
   win32: {
-    arm64: "pr-note-win32-arm64/pr-note.exe",
-    x64: "pr-note-win32-x64/pr-note.exe",
+    arm64: "@pr-note/pr-note-win32-arm64/pr-note.exe",
+    x64: "@pr-note/pr-note-win32-x64/pr-note.exe",
   },
 };
+
+function resolveBinaryPath(bin) {
+  try {
+    return import.meta.resolve(bin);
+  } catch {
+    console.error(`Failed to resolve binary path for "${bin}".`);
+    console.error("Make sure the package is installed correctly.");
+    process.exit(1);
+  }
+}
 
 function main() {
   const bin = PLATFORMS?.[platform]?.[arch];
@@ -34,8 +42,7 @@ function main() {
     process.exit(1);
   }
 
-  const currentDir = dirname(fileURLToPath(import.meta.url));
-  const binPath = resolve(currentDir, "../../", bin);
+  const binPath = resolveBinaryPath(bin);
   const result = spawnSync(binPath, process.argv.slice(2), {
     stdio: "inherit",
   });
