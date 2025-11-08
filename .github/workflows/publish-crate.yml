@@ -1,4 +1,4 @@
-name: Publish crates
+name: Publish crate
 
 on:
   push:
@@ -11,7 +11,7 @@ env:
 
 jobs:
   publish:
-    name: Publish Crates
+    name: Publish Crate
     runs-on: ubuntu-latest
 
     steps:
@@ -21,11 +21,10 @@ jobs:
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Dry run publish crates
+      - name: Dry run publish crate
         run: cargo publish --dry-run
 
-    #   - name: Publish crates
-    #     env:
-    #       CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
-    #     run: |
-    #       cargo publish
+      # - name: Publish crate
+      #   env:
+      #     CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+      #   run: cargo publish
