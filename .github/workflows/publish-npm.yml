@@ -77,7 +77,7 @@ jobs:
           BINARY_PATH="${{ steps.verify-binary.outputs.binary_path }}"
           cp ${BINARY_PATH} ${TARGET_DIR}
 
-          tree -a ${TARGET_DIR}
+          ls -la ${TARGET_DIR}
           echo "target_dir=${TARGET_DIR}" >> $GITHUB_OUTPUT
 
       - name: Setup Node.js
