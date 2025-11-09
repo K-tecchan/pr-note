@@ -53,7 +53,7 @@ impl Client {
             base,
             head,
             token,
-            ..
+            client,
         } = self;
 
         let base_url = if host == "api.github.com" {
@@ -62,8 +62,7 @@ impl Client {
             format!("https://{host}/api/v3/repos/{owner}/{repo}")
         };
         let list_url = format!("{base_url}/pulls?head={owner}:{head}&base={base}&state=open");
-        let existing: Vec<serde_json::Value> = self
-            .client
+        let existing: Vec<serde_json::Value> = client
             .get(&list_url)
             .bearer_auth(token)
             .send()
@@ -79,8 +78,7 @@ impl Client {
             let number = pr["number"].as_i64().unwrap();
             let patch_url = format!("{base_url}/pulls/{number}");
 
-            let res: serde_json::Value = self
-                .client
+            let res: serde_json::Value = client
                 .patch(&patch_url)
                 .bearer_auth(token)
                 .json(&json!({
@@ -97,8 +95,7 @@ impl Client {
         } else {
             let create_url = format!("{base_url}/pulls");
 
-            let res: serde_json::Value = self
-                .client
+            let res: serde_json::Value = client
                 .post(&create_url)
                 .bearer_auth(token)
                 .json(&json!({
@@ -186,7 +183,7 @@ impl Client {
             base,
             head,
             token,
-            ..
+            client,
         } = self;
 
         let variables = get_un_merged_commits::Variables {
@@ -202,8 +199,7 @@ impl Client {
             format!("https://{host}/api/graphql")
         };
         let request_body = GetUnMergedCommits::build_query(variables);
-        let response: GetUnMergedCommitsResponse = self
-            .client
+        let response: GetUnMergedCommitsResponse = client
             .post(&url)
             .bearer_auth(token)
             .json(&request_body)
