@@ -2,6 +2,7 @@
 
 import { spawnSync } from "node:child_process";
 import { arch, platform } from "node:process";
+import { fileURLToPath } from "node:url";
 
 const PLATFORMS = {
   darwin: {
@@ -20,7 +21,7 @@ const PLATFORMS = {
 
 function resolveBinaryPath(bin) {
   try {
-    return import.meta.resolve(bin);
+    return fileURLToPath(import.meta.resolve(bin));
   } catch {
     console.error(`Failed to resolve binary path for "${bin}".`);
     console.error("Make sure the package is installed correctly.");
