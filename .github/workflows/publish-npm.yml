@@ -181,7 +181,7 @@ jobs:
           set +e
           npx pr-note --help
           echo "Exit code: $?"
-          node bin/cli.mjs --help
+          node bin/cli.mjs --help 2>&1 | tee cli.log
           echo "Exit code: $?"
 
       - name: Dry run publish main package
