@@ -94,6 +94,20 @@ jobs:
           cd ${{ steps.prepare-package.outputs.target_dir }}
           npm publish --access public --dry-run
 
+      - name: Pack npm package
+        shell: bash
+        run: |
+          cd ${{ steps.prepare-package.outputs.target_dir }}
+          npm pack
+          ls -la
+
+      - name: Upload built package artifact
+        uses: actions/upload-artifact@v5
+        with:
+          name: pr-note-${{ matrix.code-target }}
+          path: ${{ steps.prepare-package.outputs.target_dir }}/*.tgz
+          retention-days: 1
+
   publish-pr-note:
     name: Publish @pr-note/pr-note
     needs: build-and-publish
@@ -102,6 +116,11 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
+
+      - name: Download all built artifacts
+        uses: actions/download-artifact@v5
+        with:
+          path: dist/
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -124,6 +143,19 @@ jobs:
 
           ls -la ${PACKAGE_DIR}
           echo "package_dir=${PACKAGE_DIR}" >> $GITHUB_OUTPUT
+
+      - name: Install platform packages locally
+        shell: bash
+        run: |
+          cd ${{ steps.verify-main-package.outputs.package_dir }}
+          find ../../.. -name "*.tgz" -type f -print0 | xargs -0 -I{} npm install {}
+
+      - name: Run local test
+        shell: bash
+        run: |
+          cd ${{ steps.verify-main-package.outputs.package_dir }}
+          echo "Running CLI..."
+          npx pr-note --help || node bin/cli.mjs --help
 
       - name: Dry run publish main package
         shell: bash
