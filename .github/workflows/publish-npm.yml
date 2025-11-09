@@ -150,6 +150,20 @@ jobs:
           cd ${{ steps.verify-main-package.outputs.package_dir }}
           find ../../.. -name "*.tgz" -type f -print0 | xargs -0 -I{} npm install {}
 
+      # TODO: Debug!!!
+      - name: Debug CLI files
+        run: |
+          cd packages/@pr-note/pr-note
+          echo "Current dir: $(pwd)"
+          echo "--- List files ---"
+          ls -R .
+          echo "--- Node version ---"
+          node -v
+          echo "--- Which pr-note ---"
+          which pr-note || true
+          echo "--- Check node_modules/.bin ---"
+          ls node_modules/.bin || true
+
       - name: Run local test
         shell: bash
         run: |
