@@ -164,6 +164,10 @@ jobs:
           echo "--- Check node_modules/.bin ---"
           ls node_modules/.bin || true
 
+      - name: Link main package (generate .bin)
+        working-directory: packages/@pr-note/pr-note
+        run: npm install .
+
       - name: Run local test
         shell: bash
         run: |
