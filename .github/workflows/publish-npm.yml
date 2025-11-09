@@ -167,7 +167,7 @@ jobs:
       - name: Link main package (generate .bin)
         working-directory: packages/@pr-note/pr-note
         run: |
-          rm -rf node_modules
+          ls -la node_modules
           npm pack
           npm install ./$(npm pack | tail -n1)
           echo "--- Check node_modules/.bin ---"
