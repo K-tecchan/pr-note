@@ -174,11 +174,15 @@ jobs:
           ls -R node_modules/.bin || true
 
       - name: Run local test
+        working-directory: ${{ steps.verify-main-package.outputs.package_dir }}
         shell: bash
         run: |
-          cd ${{ steps.verify-main-package.outputs.package_dir }}
           echo "Running CLI..."
-          npx pr-note --help || node bin/cli.mjs --help
+          set +e
+          npx pr-note --help
+          echo "Exit code: $?"
+          node bin/cli.mjs --help
+          echo "Exit code: $?"
 
       - name: Dry run publish main package
         shell: bash
