@@ -47,6 +47,7 @@ function main() {
     stdio: "inherit",
   });
 
+  console.log(`result is ${result}`);
   process.exit(result.status ?? 1);
 }
 
