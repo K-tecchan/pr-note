@@ -166,7 +166,12 @@ jobs:
 
       - name: Link main package (generate .bin)
         working-directory: packages/@pr-note/pr-note
-        run: npm install .
+        run: |
+          npm install .
+          echo "--- ReWhich pr-note ---"
+          which pr-note || true
+          echo "--- ReCheck node_modules/.bin ---"
+          ls node_modules/.bin || true
 
       - name: Run local test
         shell: bash
