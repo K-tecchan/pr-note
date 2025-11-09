@@ -167,11 +167,11 @@ jobs:
       - name: Link main package (generate .bin)
         working-directory: packages/@pr-note/pr-note
         run: |
-          ls -la node_modules
+          ls -R node_modules
           npm pack
           npm install ./$(npm pack | tail -n1)
           echo "--- Check node_modules/.bin ---"
-          ls -R node_modules/.bin || true
+          ls -R node_modules
 
       - name: Run local test
         working-directory: ${{ steps.verify-main-package.outputs.package_dir }}
