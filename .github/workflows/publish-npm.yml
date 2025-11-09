@@ -89,15 +89,14 @@ jobs:
           cache-dependency-path: dist/${{ matrix.code-target }}/package.json
 
       - name: Dry run publish ${{ matrix.code-target }} package
+        working-directory: ${{ steps.prepare-package.outputs.target_dir }}
         shell: bash
-        run: |
-          cd ${{ steps.prepare-package.outputs.target_dir }}
-          npm publish --access public --dry-run
+        run: npm publish --access public --dry-run
 
       - name: Pack npm package
+        working-directory: ${{ steps.prepare-package.outputs.target_dir }}
         shell: bash
         run: |
-          cd ${{ steps.prepare-package.outputs.target_dir }}
           npm pack
           ls -la
 
@@ -145,10 +144,9 @@ jobs:
           echo "package_dir=${PACKAGE_DIR}" >> $GITHUB_OUTPUT
 
       - name: Install platform packages locally
+        working-directory: ${{ steps.verify-main-package.outputs.package_dir }}
         shell: bash
-        run: |
-          cd ${{ steps.verify-main-package.outputs.package_dir }}
-          find ../../.. -name "*.tgz" -type f -print0 | xargs -0 -I{} npm install {}
+        run: find ../../.. -name "*.tgz" -type f -print0 | xargs -0 -I{} npm install {}
 
       # TODO: Debug!!!
       - name: Debug CLI files
@@ -165,7 +163,7 @@ jobs:
           ls node_modules/.bin || true
 
       - name: Link main package (generate .bin)
-        working-directory: packages/@pr-note/pr-note
+        working-directory: ${{ steps.verify-main-package.outputs.package_dir }}
         run: |
           ls -R node_modules
           npm pack
