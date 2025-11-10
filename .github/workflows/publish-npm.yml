@@ -183,7 +183,6 @@ jobs:
           echo "Exit code: $?"
 
       - name: Dry run publish main package
+        working-directory: ${{ steps.verify-main-package.outputs.package_dir }}
         shell: bash
-        run: |
-          cd ${{ steps.verify-main-package.outputs.package_dir }}
-          npm publish --access public --dry-run
+        run: npm publish --access public --dry-run
