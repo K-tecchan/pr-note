@@ -187,12 +187,14 @@ jobs:
 
       - name: package binary for GitHub Release(windows)
         if: runner.os == 'Windows'
+        shell: pwsh
         run: |
-          mkdir -p brew
-          ARCHIVE_NAME=${{ matrix.archive }}
-          BINARY_PATH="${{ steps.verify-binary.outputs.binary_path }}"
-          powershell Compress-Archive -Path "$BINARY_PATH" -DestinationPath "brew/$ARCHIVE_NAME"
-          dir brew/
+          New-Item -ItemType Directory -Force -Path brew
+          $ARCHIVE_NAME = "${{ matrix.archive }}"
+          $BINARY_PATH = "${{ steps.verify-binary.outputs.binary_path }}"
+
+          Compress-Archive -Path $BINARY_PATH -DestinationPath "brew/$ARCHIVE_NAME"
+          Get-ChildItem brew/
 
       - name: Upload to GitHub Release
         if: startsWith(github.ref_name, 'v')
