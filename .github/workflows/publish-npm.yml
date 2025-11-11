@@ -33,11 +33,11 @@ jobs:
             code-target: linux-x64
             archive: pr-note-linux-x64.tar.gz
           - target: aarch64-pc-windows-msvc
-            os: windows-latest
+            os: ubuntu-latest
             code-target: win32-arm64
             archive: pr-note-win32-arm64.zip
           - target: x86_64-pc-windows-msvc
-            os: windows-latest
+            os: ubuntu-latest
             code-target: win32-x64
             archive: pr-note-win32-x64.zip
 
