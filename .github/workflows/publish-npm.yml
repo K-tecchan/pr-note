@@ -51,11 +51,20 @@ jobs:
       - name: Build ${{ matrix.target }}
         run: cross build --release --target ${{ matrix.target }}
 
+      ########################################
+      #   .                                  #
+      #   ≈                                  #
+      #   └── target                         #
+      #        └── {{ matrix.target }}       #
+      #             └── release              #
+      #                  └── pr-note(.exe)   #
+      #                                      #
+      ########################################
       - name: Verify binary
         id: verify-binary
         shell: bash
         run: |
-          BINARY_PATH="target/${{ matrix.target }}/release/pr-note${{ (matrix.target == 'x86_64-pc-windows-msvc' || matrix.target == 'aarch64-pc-windows-msvc') && '.exe' || '' }}"
+          BINARY_PATH="target/${{ matrix.target }}/release/pr-note${{ contains(matrix.target, 'windows') && '.exe' || '' }}"
 
           if [ ! -f "$BINARY_PATH" ]; then
             echo "Error: Binary not found at $BINARY_PATH"
@@ -65,8 +74,17 @@ jobs:
           ls -la "$BINARY_PATH"
           echo "binary_path=$BINARY_PATH" >> $GITHUB_OUTPUT
 
-      - name: Prepare ${{ matrix.code-target }}
-        id: prepare-package
+      ########################################
+      #   .                                  #
+      #   ≈                                  #
+      #   └── target                         #
+      #        └── {{ matrix.target }}       #
+      #             └── release              #
+      #                  └── pr-note(.exe)   #
+      #                                      #
+      ########################################
+      - name: Create binary for ${{ matrix.code-target }}
+        id: create-binary
         shell: bash
         run: |
           TARGET_DIR="dist/${{ matrix.code-target }}"
@@ -80,6 +98,19 @@ jobs:
           ls -la ${TARGET_DIR}
           echo "target_dir=${TARGET_DIR}" >> $GITHUB_OUTPUT
 
+      ########################################
+      #   .                                  #
+      #   ≈                                  #
+      #   ├── target                         #
+      #   │    └── {{ matrix.target }}       #
+      #   │         └── release              #
+      #   │              └── pr-note(.exe)   #
+      #   └── dist                           #
+      #        └── {{ matrix.code-target }}  #
+      #             ├── package.json         #
+      #             └── pr-note(.exe)        #
+      #                                      #
+      ########################################
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -88,23 +119,51 @@ jobs:
           cache: npm
           cache-dependency-path: dist/${{ matrix.code-target }}/package.json
 
-      - name: Dry run publish ${{ matrix.code-target }} package
-        working-directory: ${{ steps.prepare-package.outputs.target_dir }}
+      ##################################################
+      #   .                                            #
+      #   ≈                                            #
+      #   └── dist                                     #
+      #        └── {{ matrix.code-target }}            #
+      #             ├── package.json                   #
+      #             └── pr-note(.exe)                  #
+      #                                                #
+      ##################################################
+      - name: Dry run "publish ${{ matrix.code-target }} npm package"
+        working-directory: ${{ steps.create-binary.outputs.target_dir }}
         shell: bash
         run: npm publish --access public --dry-run
 
-      - name: Pack npm package
-        working-directory: ${{ steps.prepare-package.outputs.target_dir }}
+      ##################################################
+      #   .                                            #
+      #   ≈                                            #
+      #   └── dist                                     #
+      #        └── {{ matrix.code-target }}(*)         #
+      #             ├── package.json                   #
+      #             └── pr-note(.exe)                  #
+      #                                                #
+      ##################################################
+      - name: Pack ${{ matrix.code-target }} npm package for test main package
+        working-directory: ${{ steps.create-binary.outputs.target_dir }}
         shell: bash
         run: |
           npm pack
           ls -la
 
+      ################################################################################
+      #   .                                                                          #
+      #   ≈                                                                          #
+      #   └── dist                                                                   #
+      #        └── {{ matrix.code-target }}                                          #
+      #             ├── package.json                                                 #
+      #             ├── pr-note(.exe)                                                #
+      #             └── pr-note-pr-note-{{ matrix.code-target }}-{{ ver }}.tgz       #
+      #                                                                              #
+      ################################################################################
       - name: Upload built package artifact
         uses: actions/upload-artifact@v5
         with:
           name: pr-note-${{ matrix.code-target }}
-          path: ${{ steps.prepare-package.outputs.target_dir }}/*.tgz
+          path: ${{ steps.create-binary.outputs.target_dir }}/*.tgz
           retention-days: 1
 
   publish-pr-note:
@@ -129,6 +188,18 @@ jobs:
           cache: npm
           cache-dependency-path: packages/@pr-note/pr-note/package.json
 
+      ########################################
+      #   .                                  #
+      #   ≈                                  #
+      #   └── packages                       #
+      #        └── @pr-note                  #
+      #             └── pr-note              #
+      #                  ├── bin             #
+      #                  │    └── cli.mjs    #
+      #                  ├── package.json    #
+      #                  └── README.md       #
+      #                                      #
+      ########################################
       - name: Verify main package
         id: verify-main-package
         shell: bash
@@ -143,6 +214,23 @@ jobs:
           ls -la ${PACKAGE_DIR}
           echo "package_dir=${PACKAGE_DIR}" >> $GITHUB_OUTPUT
 
+      ################################################################################
+      #   .                                                                          #
+      #   ≈                                                                          #
+      #   ├── packages                                                               #
+      #   │     └── @pr-note                                                         #
+      #   │          └── pr-note(*)                                                  #
+      #   │               ├── bin                                                    #
+      #   │               │    └── cli.mjs                                           #
+      #   │               ├── package.json                                           #
+      #   │               └── README.md                                              #
+      #   └── dist                                                                   #
+      #        └── {{ matrix.code-target }}                                          #
+      #             ├── package.json                                                 #
+      #             ├── pr-note(.exe)                                                #
+      #             └── pr-note-pr-note-{{ matrix.code-target }}-{{ ver }}.tgz       #
+      #                                                                              #
+      ################################################################################
       - name: Install platform packages locally
         working-directory: ${{ steps.verify-main-package.outputs.package_dir }}
         shell: bash
@@ -162,6 +250,23 @@ jobs:
           echo "--- Check node_modules/.bin ---"
           ls node_modules/.bin || true
 
+      ################################################################################
+      #   .                                                                          #
+      #   ≈                                                                          #
+      #   └── packages                                                               #
+      #         └── @pr-note                                                         #
+      #              └── pr-note(*)                                                  #
+      #                   ├── bin                                                    #
+      #                   │    └── cli.mjs                                           #
+      #                   ├── package.json                                           #
+      #                   ├── README.md                                              #
+      #                   └── node_modules                                           #
+      #                        └── @pr-note                                          #
+      #                             └── pr-note-{{ matrix.code-target }}             #
+      #                                  ├── pr-note(.exe)                           #
+      #                                  └── package.json                            #
+      #                                                                              #
+      ################################################################################
       - name: Link main package (generate .bin)
         working-directory: ${{ steps.verify-main-package.outputs.package_dir }}
         run: |
@@ -171,6 +276,28 @@ jobs:
           echo "--- Check node_modules/.bin ---"
           ls -R node_modules
 
+      ################################################################################
+      #   .                                                                          #
+      #   ≈                                                                          #
+      #   └── packages                                                               #
+      #         └── @pr-note                                                         #
+      #              └── pr-note(*)                                                  #
+      #                   ├── bin                                                    #
+      #                   │    └── cli.mjs                                           #
+      #                   ├── package.json                                           #
+      #                   ├── README.md                                              #
+      #                   └── node_modules                                           #
+      #                        └── @pr-note                                          #
+      #                             ├── pr-note-{{ matrix.code-target }}             #
+      #                             │      ├── pr-note(.exe)                         #
+      #                             │      └── package.json                          #
+      #                             └── pr-note                                      #
+      #                                  ├── README.md                               #
+      #                                  ├── bin                                     #
+      #                                  │    └── cli.mjs                            #
+      #                                  └── package.json                            #
+      #                                                                              #
+      ################################################################################
       - name: Run local test
         working-directory: ${{ steps.verify-main-package.outputs.package_dir }}
         shell: bash
@@ -186,3 +313,5 @@ jobs:
         working-directory: ${{ steps.verify-main-package.outputs.package_dir }}
         shell: bash
         run: npm publish --access public --dry-run
+
+  # create-release:
