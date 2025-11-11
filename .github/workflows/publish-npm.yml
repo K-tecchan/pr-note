@@ -176,7 +176,8 @@ jobs:
           path: ${{ steps.place-binary.outputs.target_dir }}/*.tgz
           retention-days: 1
 
-      - name: package binary for homebrew
+      - name: package binary for GitHub Release
+        shell: bash
         run: |
           mkdir -p brew
           ARCHIVE_NAME=${{ matrix.archive }}
