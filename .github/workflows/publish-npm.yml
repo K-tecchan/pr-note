@@ -19,27 +19,27 @@ jobs:
           - target: aarch64-apple-darwin
             os: macos-latest
             code-target: darwin-arm64
-            archive: pr-note-${{ github.ref_name }}-darwin-arm64.tar.gz
+            archive: pr-note-darwin-arm64.tar.gz
           - target: x86_64-apple-darwin
             os: macos-latest
             code-target: darwin-x64
-            archive: pr-note-${{ github.ref_name }}-darwin-x64.tar.gz
+            archive: pr-note-darwin-x64.tar.gz
           - target: aarch64-unknown-linux-gnu
             os: ubuntu-latest
             code-target: linux-arm64
-            archive: pr-note-${{ github.ref_name }}-linux-arm64.tar.gz
+            archive: pr-note-linux-arm64.tar.gz
           - target: x86_64-unknown-linux-gnu
             os: ubuntu-latest
             code-target: linux-x64
-            archive: pr-note-${{ github.ref_name }}-linux-x64.tar.gz
+            archive: pr-note-linux-x64.tar.gz
           - target: aarch64-pc-windows-msvc
             os: windows-latest
             code-target: win32-arm64
-            archive: pr-note-${{ github.ref_name }}-win32-arm64.zip
+            archive: pr-note-win32-arm64.zip
           - target: x86_64-pc-windows-msvc
             os: windows-latest
             code-target: win32-x64
-            archive: pr-note-${{ github.ref_name }}-win32-x64.zip
+            archive: pr-note-win32-x64.zip
 
     name: Build ${{ matrix.target }}
     runs-on: ${{ matrix.os }}
