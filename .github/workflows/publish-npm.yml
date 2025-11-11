@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+    tags:
+      - "v*.*.*"
   pull_request:
 
 env:
@@ -17,24 +19,32 @@ jobs:
           - target: aarch64-apple-darwin
             os: macos-latest
             code-target: darwin-arm64
+            archive: pr-note-${{ github.ref_name }}-darwin-arm64.tar.gz
           - target: x86_64-apple-darwin
             os: macos-latest
             code-target: darwin-x64
+            archive: pr-note-${{ github.ref_name }}-darwin-x64.tar.gz
           - target: aarch64-unknown-linux-gnu
             os: ubuntu-latest
             code-target: linux-arm64
+            archive: pr-note-${{ github.ref_name }}-linux-arm64.tar.gz
           - target: x86_64-unknown-linux-gnu
             os: ubuntu-latest
             code-target: linux-x64
+            archive: pr-note-${{ github.ref_name }}-linux-x64.tar.gz
           - target: aarch64-pc-windows-msvc
             os: windows-latest
             code-target: win32-arm64
+            archive: pr-note-${{ github.ref_name }}-win32-arm64.zip
           - target: x86_64-pc-windows-msvc
             os: windows-latest
             code-target: win32-x64
+            archive: pr-note-${{ github.ref_name }}-win32-x64.zip
 
     name: Build ${{ matrix.target }}
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout repository
@@ -83,8 +93,8 @@ jobs:
       #                  └── pr-note(.exe)   #
       #                                      #
       ########################################
-      - name: Create binary for ${{ matrix.code-target }}
-        id: create-binary
+      - name: Place binary in the dist/${{ matrix.code-target }}
+        id: place-binary
         shell: bash
         run: |
           TARGET_DIR="dist/${{ matrix.code-target }}"
@@ -129,7 +139,7 @@ jobs:
       #                                                #
       ##################################################
       - name: Dry run "publish ${{ matrix.code-target }} npm package"
-        working-directory: ${{ steps.create-binary.outputs.target_dir }}
+        working-directory: ${{ steps.place-binary.outputs.target_dir }}
         shell: bash
         run: npm publish --access public --dry-run
 
@@ -143,7 +153,7 @@ jobs:
       #                                                #
       ##################################################
       - name: Pack ${{ matrix.code-target }} npm package for test main package
-        working-directory: ${{ steps.create-binary.outputs.target_dir }}
+        working-directory: ${{ steps.place-binary.outputs.target_dir }}
         shell: bash
         run: |
           npm pack
@@ -163,8 +173,30 @@ jobs:
         uses: actions/upload-artifact@v5
         with:
           name: pr-note-${{ matrix.code-target }}
-          path: ${{ steps.create-binary.outputs.target_dir }}/*.tgz
+          path: ${{ steps.place-binary.outputs.target_dir }}/*.tgz
           retention-days: 1
+
+      - name: package binary for homebrew
+        run: |
+          mkdir -p brew
+          ARCHIVE_NAME=${{ matrix.archive }}
+          BINARY_PATH="${{ steps.verify-binary.outputs.binary_path }}"
+
+          if [[ "$ARCHIVE_NAME" == *.zip ]]; then
+            zip -j "brew/$ARCHIVE_NAME" "$BINARY_PATH"
+          else
+            tar -czvf "brew/$ARCHIVE_NAME" -C "$(dirname "$BINARY_PATH")" "$(basename "$BINARY_PATH")"
+          fi
+
+          ls -la brew/
+
+      - name: Upload to GitHub Release
+        if: startsWith(github.ref_name, 'v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: brew/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   publish-pr-note:
     name: Publish @pr-note/pr-note
@@ -314,4 +346,102 @@ jobs:
         shell: bash
         run: npm publish --access public --dry-run
 
-  # create-release:
+  # update-homebrew:
+  #   name: Update Homebrew Tap
+  #   needs: build-and-publish
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout tap repo
+  #       uses: actions/checkout@v5
+  #       with:
+  #         repository: yourname/homebrew-tap
+  #         token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+  #         path: homebrew-tap
+
+  #     - name: Download release assets
+  #       uses: actions/github-script@v7
+  #       id: get-assets
+  #       with:
+  #         script: |
+  #           const {owner, repo} = context.repo;
+  #           const release = await github.rest.repos.getReleaseByTag({
+  #             owner,
+  #             repo,
+  #             tag: context.ref.replace("refs/tags/", "")
+  #           });
+  #           return release.data.assets.map(a => ({
+  #             name: a.name,
+  #             url: a.browser_download_url
+  #           }));
+
+  #     - name: Download and calculate SHA256
+  #       id: sha256
+  #       run: |
+  #         mkdir -p assets
+  #         for asset in $(echo '${{ steps.get-assets.outputs.result }}' | jq -r '.[].url'); do
+  #           fname=$(basename "$asset")
+  #           curl -L "$asset" -o "assets/$fname"
+  #         done
+
+  #         echo "--- Calculating SHA256 ---"
+  #         for f in assets/*.tar.gz; do
+  #           sum=$(shasum -a 256 "$f" | cut -d' ' -f1)
+  #           echo "$f -> $sum"
+  #           echo "$(basename $f)=$sum" >> sha256.txt
+  #         done
+  #         cat sha256.txt
+
+  #     - name: Generate Homebrew formula
+  #       run: |
+  #         VERSION=${GITHUB_REF#refs/tags/v}
+  #         SHA_DARWIN_X64=$(grep darwin-x64 sha256.txt | cut -d= -f2)
+  #         SHA_DARWIN_ARM64=$(grep darwin-arm64 sha256.txt | cut -d= -f2)
+  #         SHA_LINUX_X64=$(grep linux-x64 sha256.txt | cut -d= -f2)
+  #         SHA_LINUX_ARM64=$(grep linux-arm64 sha256.txt | cut -d= -f2)
+
+  #         cat > homebrew-tap/Formula/pr-note.rb <<'RUBY'
+  #         class PrNote < Formula
+  #           desc "A CLI tool to generate PR release notes"
+  #           homepage "https://github.com/yourname/pr-note"
+  #           version "VERSION_PLACEHOLDER"
+
+  #           on_macos do
+  #             if Hardware::CPU.arm?
+  #               url "https://github.com/yourname/pr-note/releases/download/vVERSION_PLACEHOLDER/pr-note-vVERSION_PLACEHOLDER-darwin-arm64.tar.gz"
+  #               sha256 "SHA_DARWIN_ARM64_PLACEHOLDER"
+  #             else
+  #               url "https://github.com/yourname/pr-note/releases/download/vVERSION_PLACEHOLDER/pr-note-vVERSION_PLACEHOLDER-darwin-x64.tar.gz"
+  #               sha256 "SHA_DARWIN_X64_PLACEHOLDER"
+  #             end
+  #           end
+
+  #           on_linux do
+  #             if Hardware::CPU.arm?
+  #               url "https://github.com/yourname/pr-note/releases/download/vVERSION_PLACEHOLDER/pr-note-vVERSION_PLACEHOLDER-linux-arm64.tar.gz"
+  #               sha256 "SHA_LINUX_ARM64_PLACEHOLDER"
+  #             else
+  #               url "https://github.com/yourname/pr-note/releases/download/vVERSION_PLACEHOLDER/pr-note-vVERSION_PLACEHOLDER-linux-x64.tar.gz"
+  #               sha256 "SHA_LINUX_X64_PLACEHOLDER"
+  #             end
+  #           end
+
+  #           def install
+  #             bin.install "pr-note"
+  #           end
+  #         end
+  #         RUBY
+
+  #         sed -i "s/VERSION_PLACEHOLDER/$VERSION/g" homebrew-tap/Formula/pr-note.rb
+  #         sed -i "s/SHA_DARWIN_X64_PLACEHOLDER/$SHA_DARWIN_X64/g" homebrew-tap/Formula/pr-note.rb
+  #         sed -i "s/SHA_DARWIN_ARM64_PLACEHOLDER/$SHA_DARWIN_ARM64/g" homebrew-tap/Formula/pr-note.rb
+  #         sed -i "s/SHA_LINUX_X64_PLACEHOLDER/$SHA_LINUX_X64/g" homebrew-tap/Formula/pr-note.rb
+  #         sed -i "s/SHA_LINUX_ARM64_PLACEHOLDER/$SHA_LINUX_ARM64/g" homebrew-tap/Formula/pr-note.rb
+
+  #     - name: Commit and push formula
+  #       working-directory: homebrew-tap
+  #       run: |
+  #         git config user.name "github-actions[bot]"
+  #         git config user.email "github-actions[bot]@users.noreply.github.com"
+  #         git add Formula/pr-note.rb
+  #         git commit -m "update: pr-note to version ${GITHUB_REF#refs/tags/}"
+  #         git push
