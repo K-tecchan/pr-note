@@ -33,11 +33,11 @@ jobs:
             code-target: linux-x64
             archive: pr-note-linux-x64.tar.gz
           - target: aarch64-pc-windows-msvc
-            os: ubuntu-latest
+            os: windows-latest
             code-target: win32-arm64
             archive: pr-note-win32-arm64.zip
           - target: x86_64-pc-windows-msvc
-            os: ubuntu-latest
+            os: windows-latest
             code-target: win32-x64
             archive: pr-note-win32-x64.zip
 
@@ -176,20 +176,23 @@ jobs:
           path: ${{ steps.place-binary.outputs.target_dir }}/*.tgz
           retention-days: 1
 
-      - name: package binary for GitHub Release
-        shell: bash
+      - name: package binary for GitHub Release(mac, linux)
+        if: runner.os != 'Windows'
         run: |
           mkdir -p brew
           ARCHIVE_NAME=${{ matrix.archive }}
           BINARY_PATH="${{ steps.verify-binary.outputs.binary_path }}"
-
-          if [[ "$ARCHIVE_NAME" == *.zip ]]; then
-            zip -j "brew/$ARCHIVE_NAME" "$BINARY_PATH"
-          else
-            tar -czvf "brew/$ARCHIVE_NAME" -C "$(dirname "$BINARY_PATH")" "$(basename "$BINARY_PATH")"
-          fi
-
+          tar -czvf "brew/$ARCHIVE_NAME" -C "$(dirname "$BINARY_PATH")" "$(basename "$BINARY_PATH")"
           ls -la brew/
+
+      - name: package binary for GitHub Release(windows)
+        if: runner.os == 'Windows'
+        run: |
+          mkdir -p brew
+          ARCHIVE_NAME=${{ matrix.archive }}
+          BINARY_PATH="${{ steps.verify-binary.outputs.binary_path }}"
+          powershell Compress-Archive -Path "$BINARY_PATH" -DestinationPath "brew/$ARCHIVE_NAME"
+          dir brew/
 
       - name: Upload to GitHub Release
         if: startsWith(github.ref_name, 'v')
