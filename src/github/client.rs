@@ -4,7 +4,7 @@ use graphql_client::{self, GraphQLQuery};
 use serde::Serialize;
 use serde_json::json;
 
-use super::graphql::{get_un_merged_commits, GetUnMergedCommits};
+use super::graphql::{GetUnMergedCommits, get_un_merged_commits};
 
 type GetUnMergedCommitsResponse = graphql_client::Response<get_un_merged_commits::ResponseData>;
 type GetUnMergedCommitsResult = Result<GetUnMergedCommitsResponse, reqwest::Error>;
