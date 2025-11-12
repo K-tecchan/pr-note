@@ -277,41 +277,43 @@ jobs:
           SHA_LINUX_X64="sample-sha" # replace with actual sha256
           SHA_LINUX_ARM64="sample-sha" # replace with actual sha256
 
-          cat > homebrew-tap/Formula/pr-note.rb <<RUBY
-            class PrNote < Formula
-              desc "A command-line tool to generate PR notes summarizing unmerged PRs on GitHub between two branches."
-              homepage "https://github.com/K-tecchan/pr-note"
-              version "${VERSION}"
+          mkdir -p homebrew-tap/Formula
 
-              on_macos do
-                if Hardware::CPU.arm?
-                  url "https://github.com/K-tecchan/pr-note/releases/download/v${VERSION}/pr-note-v${VERSION}-darwin-arm64.tar.gz"
-                  sha256 "${SHA_DARWIN_ARM64}"
-                else
-                  url "https://github.com/K-tecchan/pr-note/releases/download/v${VERSION}/pr-note-v${VERSION}-darwin-x64.tar.gz"
-                  sha256 "${SHA_DARWIN_X64}"
-                end
-              end
+          cat > homebrew-tap/Formula/pr-note.rb <<'RUBY'
+          class PrNote < Formula
+            desc "A command-line tool to generate PR notes summarizing unmerged PRs on GitHub between two branches."
+            homepage "https://github.com/K-tecchan/pr-note"
+            version "${VERSION}"
 
-              on_linux do
-                if Hardware::CPU.arm?
-                  url "https://github.com/K-tecchan/pr-note/releases/download/v${VERSION}/pr-note-v${VERSION}-linux-arm64.tar.gz"
-                  sha256 "${SHA_LINUX_ARM64}"
-                else
-                  url "https://github.com/K-tecchan/pr-note/releases/download/v${VERSION}/pr-note-v${VERSION}-linux-x64.tar.gz"
-                  sha256 "${SHA_LINUX_X64}"
-                end
-              end
-
-              def install
-                bin.install "pr-note"
-              end
-
-              test do
-                system "\#{bin}/pr-note", "--version"
+            on_macos do
+              if Hardware::CPU.arm?
+                url "https://github.com/K-tecchan/pr-note/releases/download/v${VERSION}/pr-note-v${VERSION}-darwin-arm64.tar.gz"
+                sha256 "${SHA_DARWIN_ARM64}"
+              else
+                url "https://github.com/K-tecchan/pr-note/releases/download/v${VERSION}/pr-note-v${VERSION}-darwin-x64.tar.gz"
+                sha256 "${SHA_DARWIN_X64}"
               end
             end
-            RUBY
+
+            on_linux do
+              if Hardware::CPU.arm?
+                url "https://github.com/K-tecchan/pr-note/releases/download/v${VERSION}/pr-note-v${VERSION}-linux-arm64.tar.gz"
+                sha256 "${SHA_LINUX_ARM64}"
+              else
+                url "https://github.com/K-tecchan/pr-note/releases/download/v${VERSION}/pr-note-v${VERSION}-linux-x64.tar.gz"
+                sha256 "${SHA_LINUX_X64}"
+              end
+            end
+
+            def install
+              bin.install "pr-note"
+            end
+
+            test do
+              system "#{bin}/pr-note", "--version"
+            end
+          end
+          RUBY
 
       - name: Commit and push formula
         working-directory: homebrew-tap
