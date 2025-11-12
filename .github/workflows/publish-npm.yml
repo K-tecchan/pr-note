@@ -43,6 +43,9 @@ jobs:
 
     name: Build ${{ matrix.target }}
     runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
     permissions:
       contents: write
 
@@ -61,20 +64,10 @@ jobs:
       - name: Build ${{ matrix.target }}
         run: cross build --release --target ${{ matrix.target }}
 
-      ########################################
-      #   .                                  #
-      #   ≈                                  #
-      #   └── target                         #
-      #        └── {{ matrix.target }}       #
-      #             └── release              #
-      #                  └── pr-note(.exe)   #
-      #                                      #
-      ########################################
       - name: Verify binary
         id: verify-binary
-        shell: bash
         run: |
-          BINARY_PATH="target/${{ matrix.target }}/release/pr-note${{ contains(matrix.target, 'windows') && '.exe' || '' }}"
+          BINARY_PATH="target/${{ matrix.target }}/release/pr-note${{ runner.os == 'Windows' && '.exe' || '' }}"
 
           if [ ! -f "$BINARY_PATH" ]; then
             echo "Error: Binary not found at $BINARY_PATH"
@@ -84,18 +77,8 @@ jobs:
           ls -la "$BINARY_PATH"
           echo "binary_path=$BINARY_PATH" >> $GITHUB_OUTPUT
 
-      ########################################
-      #   .                                  #
-      #   ≈                                  #
-      #   └── target                         #
-      #        └── {{ matrix.target }}       #
-      #             └── release              #
-      #                  └── pr-note(.exe)   #
-      #                                      #
-      ########################################
       - name: Place binary in the dist/${{ matrix.code-target }}
         id: place-binary
-        shell: bash
         run: |
           TARGET_DIR="dist/${{ matrix.code-target }}"
 
@@ -108,19 +91,6 @@ jobs:
           ls -la ${TARGET_DIR}
           echo "target_dir=${TARGET_DIR}" >> $GITHUB_OUTPUT
 
-      ########################################
-      #   .                                  #
-      #   ≈                                  #
-      #   ├── target                         #
-      #   │    └── {{ matrix.target }}       #
-      #   │         └── release              #
-      #   │              └── pr-note(.exe)   #
-      #   └── dist                           #
-      #        └── {{ matrix.code-target }}  #
-      #             ├── package.json         #
-      #             └── pr-note(.exe)        #
-      #                                      #
-      ########################################
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -129,46 +99,16 @@ jobs:
           cache: npm
           cache-dependency-path: dist/${{ matrix.code-target }}/package.json
 
-      ##################################################
-      #   .                                            #
-      #   ≈                                            #
-      #   └── dist                                     #
-      #        └── {{ matrix.code-target }}            #
-      #             ├── package.json                   #
-      #             └── pr-note(.exe)                  #
-      #                                                #
-      ##################################################
       - name: Dry run "publish ${{ matrix.code-target }} npm package"
         working-directory: ${{ steps.place-binary.outputs.target_dir }}
-        shell: bash
         run: npm publish --access public --dry-run
 
-      ##################################################
-      #   .                                            #
-      #   ≈                                            #
-      #   └── dist                                     #
-      #        └── {{ matrix.code-target }}(*)         #
-      #             ├── package.json                   #
-      #             └── pr-note(.exe)                  #
-      #                                                #
-      ##################################################
       - name: Pack ${{ matrix.code-target }} npm package for test main package
         working-directory: ${{ steps.place-binary.outputs.target_dir }}
-        shell: bash
         run: |
           npm pack
           ls -la
 
-      ################################################################################
-      #   .                                                                          #
-      #   ≈                                                                          #
-      #   └── dist                                                                   #
-      #        └── {{ matrix.code-target }}                                          #
-      #             ├── package.json                                                 #
-      #             ├── pr-note(.exe)                                                #
-      #             └── pr-note-pr-note-{{ matrix.code-target }}-{{ ver }}.tgz       #
-      #                                                                              #
-      ################################################################################
       - name: Upload built package artifact
         uses: actions/upload-artifact@v5
         with:
@@ -204,10 +144,13 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  publish-pr-note:
+  publish-pr-note-to-npm:
     name: Publish @pr-note/pr-note
     needs: build-and-publish
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
 
     steps:
       - name: Checkout repository
@@ -226,21 +169,8 @@ jobs:
           cache: npm
           cache-dependency-path: packages/@pr-note/pr-note/package.json
 
-      ########################################
-      #   .                                  #
-      #   ≈                                  #
-      #   └── packages                       #
-      #        └── @pr-note                  #
-      #             └── pr-note              #
-      #                  ├── bin             #
-      #                  │    └── cli.mjs    #
-      #                  ├── package.json    #
-      #                  └── README.md       #
-      #                                      #
-      ########################################
       - name: Verify main package
         id: verify-main-package
-        shell: bash
         run: |
           PACKAGE_DIR="packages/@pr-note/pr-note"
 
@@ -252,26 +182,8 @@ jobs:
           ls -la ${PACKAGE_DIR}
           echo "package_dir=${PACKAGE_DIR}" >> $GITHUB_OUTPUT
 
-      ################################################################################
-      #   .                                                                          #
-      #   ≈                                                                          #
-      #   ├── packages                                                               #
-      #   │     └── @pr-note                                                         #
-      #   │          └── pr-note(*)                                                  #
-      #   │               ├── bin                                                    #
-      #   │               │    └── cli.mjs                                           #
-      #   │               ├── package.json                                           #
-      #   │               └── README.md                                              #
-      #   └── dist                                                                   #
-      #        └── {{ matrix.code-target }}                                          #
-      #             ├── package.json                                                 #
-      #             ├── pr-note(.exe)                                                #
-      #             └── pr-note-pr-note-{{ matrix.code-target }}-{{ ver }}.tgz       #
-      #                                                                              #
-      ################################################################################
       - name: Install platform packages locally
         working-directory: ${{ steps.verify-main-package.outputs.package_dir }}
-        shell: bash
         run: find ../../.. -name "*.tgz" -type f -print0 | xargs -0 -I{} npm install {}
 
       # TODO: Debug!!!
@@ -288,23 +200,6 @@ jobs:
           echo "--- Check node_modules/.bin ---"
           ls node_modules/.bin || true
 
-      ################################################################################
-      #   .                                                                          #
-      #   ≈                                                                          #
-      #   └── packages                                                               #
-      #         └── @pr-note                                                         #
-      #              └── pr-note(*)                                                  #
-      #                   ├── bin                                                    #
-      #                   │    └── cli.mjs                                           #
-      #                   ├── package.json                                           #
-      #                   ├── README.md                                              #
-      #                   └── node_modules                                           #
-      #                        └── @pr-note                                          #
-      #                             └── pr-note-{{ matrix.code-target }}             #
-      #                                  ├── pr-note(.exe)                           #
-      #                                  └── package.json                            #
-      #                                                                              #
-      ################################################################################
       - name: Link main package (generate .bin)
         working-directory: ${{ steps.verify-main-package.outputs.package_dir }}
         run: |
@@ -314,31 +209,8 @@ jobs:
           echo "--- Check node_modules/.bin ---"
           ls -R node_modules
 
-      ################################################################################
-      #   .                                                                          #
-      #   ≈                                                                          #
-      #   └── packages                                                               #
-      #         └── @pr-note                                                         #
-      #              └── pr-note(*)                                                  #
-      #                   ├── bin                                                    #
-      #                   │    └── cli.mjs                                           #
-      #                   ├── package.json                                           #
-      #                   ├── README.md                                              #
-      #                   └── node_modules                                           #
-      #                        └── @pr-note                                          #
-      #                             ├── pr-note-{{ matrix.code-target }}             #
-      #                             │      ├── pr-note(.exe)                         #
-      #                             │      └── package.json                          #
-      #                             └── pr-note                                      #
-      #                                  ├── README.md                               #
-      #                                  ├── bin                                     #
-      #                                  │    └── cli.mjs                            #
-      #                                  └── package.json                            #
-      #                                                                              #
-      ################################################################################
       - name: Run local test
         working-directory: ${{ steps.verify-main-package.outputs.package_dir }}
-        shell: bash
         run: |
           echo "Running CLI..."
           set +e
@@ -349,105 +221,103 @@ jobs:
 
       - name: Dry run publish main package
         working-directory: ${{ steps.verify-main-package.outputs.package_dir }}
-        shell: bash
         run: npm publish --access public --dry-run
 
-  # update-homebrew:
-  #   name: Update Homebrew Tap
-  #   needs: build-and-publish
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout tap repo
-  #       uses: actions/checkout@v5
-  #       with:
-  #         repository: yourname/homebrew-tap
-  #         token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
-  #         path: homebrew-tap
+  update-homebrew:
+    name: Update Homebrew Tap
+    needs: build-and-publish
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
 
-  #     - name: Download release assets
-  #       uses: actions/github-script@v7
-  #       id: get-assets
-  #       with:
-  #         script: |
-  #           const {owner, repo} = context.repo;
-  #           const release = await github.rest.repos.getReleaseByTag({
-  #             owner,
-  #             repo,
-  #             tag: context.ref.replace("refs/tags/", "")
-  #           });
-  #           return release.data.assets.map(a => ({
-  #             name: a.name,
-  #             url: a.browser_download_url
-  #           }));
+    steps:
+      - name: Checkout tap repo
+        uses: actions/checkout@v5
+        with:
+          repository: yourname/homebrew-tap
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          path: homebrew-tap
 
-  #     - name: Download and calculate SHA256
-  #       id: sha256
-  #       run: |
-  #         mkdir -p assets
-  #         for asset in $(echo '${{ steps.get-assets.outputs.result }}' | jq -r '.[].url'); do
-  #           fname=$(basename "$asset")
-  #           curl -L "$asset" -o "assets/$fname"
-  #         done
+      # - name: Fetch release assets
+      #   id: get-assets
+      #   uses: actions/github-script@v7
+      #   with:
+      #     script: |
+      #       const {owner, repo} = context.repo;
+      #       const tag = context.ref.replace("refs/tags/", "");
+      #       const release = await github.rest.repos.getReleaseByTag({ owner, repo, tag });
+      #       const assets = release.data.assets.map(a => ({ name: a.name, url: a.browser_download_url }));
+      #       core.setOutput("assets", JSON.stringify(assets));
 
-  #         echo "--- Calculating SHA256 ---"
-  #         for f in assets/*.tar.gz; do
-  #           sum=$(shasum -a 256 "$f" | cut -d' ' -f1)
-  #           echo "$f -> $sum"
-  #           echo "$(basename $f)=$sum" >> sha256.txt
-  #         done
-  #         cat sha256.txt
+      # - name: Download and calculate SHA256
+      #   id: sha256
+      #   run: |
+      #     mkdir -p assets
+      #     for url in $(echo '${{ steps.get-assets.outputs.assets }}' | jq -r '.[].url'); do
+      #       fname=$(basename "$url")
+      #       curl -sL "$url" -o "assets/$fname"
+      #     done
+      #     echo "--- Calculating SHA256 ---"
+      #     for f in assets/*.tar.gz; do
+      #       echo "$(basename $f)=$(sha256sum $f | awk '{print $1}')" >> sha256.txt
+      #     done
+      #     cat sha256.txt
 
-  #     - name: Generate Homebrew formula
-  #       run: |
-  #         VERSION=${GITHUB_REF#refs/tags/v}
-  #         SHA_DARWIN_X64=$(grep darwin-x64 sha256.txt | cut -d= -f2)
-  #         SHA_DARWIN_ARM64=$(grep darwin-arm64 sha256.txt | cut -d= -f2)
-  #         SHA_LINUX_X64=$(grep linux-x64 sha256.txt | cut -d= -f2)
-  #         SHA_LINUX_ARM64=$(grep linux-arm64 sha256.txt | cut -d= -f2)
+      - name: Generate formula
+        run: |
+          # VERSION="${GITHUB_REF#refs/tags/v}"
+          # SHA_DARWIN_X64=$(grep darwin-x64 sha256.txt | cut -d= -f2)
+          # SHA_DARWIN_ARM64=$(grep darwin-arm64 sha256.txt | cut -d= -f2)
+          # SHA_LINUX_X64=$(grep linux-x64 sha256.txt | cut -d= -f2)
+          # SHA_LINUX_ARM64=$(grep linux-arm64 sha256.txt | cut -d= -f2)
+          VERSION="sample-version" replace with actual version
+          SHA_DARWIN_X64="sample-sha" # replace with actual sha256
+          SHA_DARWIN_ARM64="sample-sha" # replace with actual sha256
+          SHA_LINUX_X64="sample-sha" # replace with actual sha256
+          SHA_LINUX_ARM64="sample-sha" # replace with actual sha256
 
-  #         cat > homebrew-tap/Formula/pr-note.rb <<'RUBY'
-  #         class PrNote < Formula
-  #           desc "A CLI tool to generate PR release notes"
-  #           homepage "https://github.com/yourname/pr-note"
-  #           version "VERSION_PLACEHOLDER"
+          cat > homebrew-tap/Formula/pr-note.rb <<RUBY
+            class PrNote < Formula
+              desc "A command-line tool to generate PR notes summarizing unmerged PRs on GitHub between two branches."
+              homepage "https://github.com/yourname/pr-note"
+              version "${VERSION}"
 
-  #           on_macos do
-  #             if Hardware::CPU.arm?
-  #               url "https://github.com/yourname/pr-note/releases/download/vVERSION_PLACEHOLDER/pr-note-vVERSION_PLACEHOLDER-darwin-arm64.tar.gz"
-  #               sha256 "SHA_DARWIN_ARM64_PLACEHOLDER"
-  #             else
-  #               url "https://github.com/yourname/pr-note/releases/download/vVERSION_PLACEHOLDER/pr-note-vVERSION_PLACEHOLDER-darwin-x64.tar.gz"
-  #               sha256 "SHA_DARWIN_X64_PLACEHOLDER"
-  #             end
-  #           end
+              on_macos do
+                if Hardware::CPU.arm?
+                  url "https://github.com/yourname/pr-note/releases/download/v${VERSION}/pr-note-v${VERSION}-darwin-arm64.tar.gz"
+                  sha256 "${SHA_DARWIN_ARM64}"
+                else
+                  url "https://github.com/yourname/pr-note/releases/download/v${VERSION}/pr-note-v${VERSION}-darwin-x64.tar.gz"
+                  sha256 "${SHA_DARWIN_X64}"
+                end
+              end
 
-  #           on_linux do
-  #             if Hardware::CPU.arm?
-  #               url "https://github.com/yourname/pr-note/releases/download/vVERSION_PLACEHOLDER/pr-note-vVERSION_PLACEHOLDER-linux-arm64.tar.gz"
-  #               sha256 "SHA_LINUX_ARM64_PLACEHOLDER"
-  #             else
-  #               url "https://github.com/yourname/pr-note/releases/download/vVERSION_PLACEHOLDER/pr-note-vVERSION_PLACEHOLDER-linux-x64.tar.gz"
-  #               sha256 "SHA_LINUX_X64_PLACEHOLDER"
-  #             end
-  #           end
+              on_linux do
+                if Hardware::CPU.arm?
+                  url "https://github.com/yourname/pr-note/releases/download/v${VERSION}/pr-note-v${VERSION}-linux-arm64.tar.gz"
+                  sha256 "${SHA_LINUX_ARM64}"
+                else
+                  url "https://github.com/yourname/pr-note/releases/download/v${VERSION}/pr-note-v${VERSION}-linux-x64.tar.gz"
+                  sha256 "${SHA_LINUX_X64}"
+                end
+              end
 
-  #           def install
-  #             bin.install "pr-note"
-  #           end
-  #         end
-  #         RUBY
+              def install
+                bin.install "pr-note"
+              end
 
-  #         sed -i "s/VERSION_PLACEHOLDER/$VERSION/g" homebrew-tap/Formula/pr-note.rb
-  #         sed -i "s/SHA_DARWIN_X64_PLACEHOLDER/$SHA_DARWIN_X64/g" homebrew-tap/Formula/pr-note.rb
-  #         sed -i "s/SHA_DARWIN_ARM64_PLACEHOLDER/$SHA_DARWIN_ARM64/g" homebrew-tap/Formula/pr-note.rb
-  #         sed -i "s/SHA_LINUX_X64_PLACEHOLDER/$SHA_LINUX_X64/g" homebrew-tap/Formula/pr-note.rb
-  #         sed -i "s/SHA_LINUX_ARM64_PLACEHOLDER/$SHA_LINUX_ARM64/g" homebrew-tap/Formula/pr-note.rb
+              test do
+                system "\#{bin}/pr-note", "--version"
+              end
+            end
+            RUBY
 
-  #     - name: Commit and push formula
-  #       working-directory: homebrew-tap
-  #       run: |
-  #         git config user.name "github-actions[bot]"
-  #         git config user.email "github-actions[bot]@users.noreply.github.com"
-  #         git add Formula/pr-note.rb
-  #         git commit -m "update: pr-note to version ${GITHUB_REF#refs/tags/}"
-  #         git push
+      - name: Commit and push formula
+        working-directory: homebrew-tap
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/pr-note.rb
+          git commit -m "Update pr-note to ${GITHUB_REF#refs/tags/}" || echo "No changes"
+          git push
