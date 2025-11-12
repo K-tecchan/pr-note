@@ -20,6 +20,9 @@
     "url": "https://github.com/K-tecchan/pr-note/issues"
   },
   "homepage": "https://github.com/K-tecchan/pr-note#readme",
+  "files": [
+    "bin/"
+  ],
   "engines": {
     "node": ">=20.8"
   },
