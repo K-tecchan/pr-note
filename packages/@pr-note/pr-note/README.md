@@ -1,4 +1,4 @@
-# @pr-note/pr-note
+# [@pr-note/pr-note](https://www.npmjs.com/package/@pr-note/pr-note)
 
 A command-line tool to generate PR notes summarizing unmerged PRs on GitHub between two branches.
 

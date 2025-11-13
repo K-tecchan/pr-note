@@ -2,6 +2,8 @@
 
 A command-line tool to generate PR notes summarizing unmerged PRs on GitHub between two branches.
 
+![](./images/example.png)
+
 ## Usage
 
 For example, to create a release pull request from the `feature` to the `main` in the [octocat/Hello-World](https://github.com/octocat/Hello-World) repository, do the following:
@@ -51,13 +53,13 @@ In the template, the `prs` object is available, which is the list of pull reques
 
 ## Installation
 
-### cargo
+### [cargo](https://crates.io/crates/pr-note)
 
 ```bash
 cargo install pr-note
 ```
 
-### npm
+### [npm](https://www.npmjs.com/package/@pr-note/pr-note)
 
 ```bash
 # If you want to install globally
