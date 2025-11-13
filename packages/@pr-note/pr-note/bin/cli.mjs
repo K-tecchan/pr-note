@@ -48,7 +48,6 @@ function main() {
     stdio: "inherit",
   });
 
-  console.log(`result is ${JSON.stringify(result)}`);
   process.exit(result.status ?? 1);
 }
 
