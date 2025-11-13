@@ -216,7 +216,7 @@ jobs:
         run: |
           mkdir -p assets
 
-          echo "${{ steps.get-assets.outputs.assets }}" | jq -r '.[].url' | while read -r url; do
+          echo '${{ steps.get-assets.outputs.assets }}' | jq -r '.[].url' | while read -r url; do
               fname=$(basename "$url")
               curl -sL "$url" -o "assets/$fname"
           done
