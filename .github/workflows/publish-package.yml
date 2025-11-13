@@ -215,14 +215,18 @@ jobs:
         id: sha256
         run: |
           mkdir -p assets
-          for url in $(echo "${{ steps.get-assets.outputs.assets }}" | jq -r '.[].url'); do
-            fname=$(basename "$url")
-            curl -sL "$url" -o "assets/$fname"
+
+          echo "${{ steps.get-assets.outputs.assets }}" | jq -r '.[].url' | while read -r url; do
+              fname=$(basename "$url")
+              curl -sL "$url" -o "assets/$fname"
           done
+
           echo "--- Calculating SHA256 ---"
           for f in assets/*.tar.gz; do
-            echo "$(basename $f)=$(sha256sum $f | awk '{print $1}')" >> sha256.txt
+              [ -f "$f" ] || continue
+              echo "$(basename "$f")=$(sha256sum "$f" | awk '{print $1}')" >> sha256.txt
           done
+
           cat sha256.txt
 
       - name: Generate formula
