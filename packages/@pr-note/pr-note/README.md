@@ -1,3 +1,5 @@
 # @pr-note/pr-note
 
-todo
+```
+npm install -D @pr-note/pr-note
+```

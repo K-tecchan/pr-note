@@ -123,7 +123,7 @@ jobs:
           retention-days: 1
 
       - name: package binary for GitHub Release(mac, linux)
-        if: runner.os != 'Windows'
+        if: runner.os != 'Windows' && ${{ startsWith(github.ref, 'refs/tags/v') }}
         run: |
           mkdir -p brew
           ARCHIVE_NAME=${{ matrix.archive }}
@@ -133,7 +133,7 @@ jobs:
           ls -la brew/
 
       - name: package binary for GitHub Release(windows)
-        if: runner.os == 'Windows'
+        if: runner.os == 'Windows' && ${{ startsWith(github.ref, 'refs/tags/v') }}
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path brew
