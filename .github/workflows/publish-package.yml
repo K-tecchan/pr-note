@@ -185,7 +185,7 @@ jobs:
 
   publish-homebrew:
     name: Publish Homebrew Tap
-    needs: build-and-publish
+    needs: [build-and-publish, publish-pr-note-to-npm]
     if: ${{ startsWith(github.ref, 'refs/tags/v') }}
     runs-on: ubuntu-latest
     defaults:
@@ -288,7 +288,7 @@ jobs:
 
   publish-crate:
     name: Publish Crate
-    needs: build-and-publish
+    needs: [build-and-publish, publish-pr-note-to-npm]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
