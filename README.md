@@ -51,7 +51,26 @@ In the template, the `prs` object is available, which is the list of pull reques
 
 ## Installation
 
-todo: Add installation instructions
+### cargo
+
+```bash
+cargo install pr-note
+```
+
+### npm
+
+```bash
+# If you want to install globally
+npm install -g @pr-note/pr-note
+# If you want to install as a development dependency in a project
+npm install -D @pr-note/pr-note
+```
+
+### Homebrew
+
+```bash
+brew install K-tecchan/tap/pr-note
+```
 
 ## Options
 
