@@ -1,0 +1,37 @@
+{
+  "name": "@pr-note/pr-note",
+  "version": "0.1.0",
+  "description": "A command-line tool to generate PR notes summarizing unmerged PRs on GitHub between two branches.",
+  "bin": {
+    "pr-note": "bin/cli.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/K-tecchan/pr-note.git",
+    "directory": "packages/@pr-note/pr-note"
+  },
+  "keywords": [
+    "cli",
+    "github"
+  ],
+  "author": "K-tecchan",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/K-tecchan/pr-note/issues"
+  },
+  "homepage": "https://github.com/K-tecchan/pr-note#readme",
+  "files": [
+    "bin/"
+  ],
+  "engines": {
+    "node": ">=20.8"
+  },
+  "optionalDependencies": {
+    "@pr-note/pr-note-darwin-arm64": "0.1.0",
+    "@pr-note/pr-note-darwin-x64": "0.1.0",
+    "@pr-note/pr-note-linux-arm64": "0.1.0",
+    "@pr-note/pr-note-linux-x64": "0.1.0",
+    "@pr-note/pr-note-win32-arm64": "0.1.0",
+    "@pr-note/pr-note-win32-x64": "0.1.0"
+  }
+}

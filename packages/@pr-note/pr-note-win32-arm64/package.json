@@ -1,0 +1,19 @@
+{
+  "name": "@pr-note/pr-note-win32-arm64",
+  "version": "0.1.0",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/K-tecchan/pr-note.git",
+    "directory": "packages/@pr-note/pr-note-win32-arm64"
+  },
+  "os": [
+    "win32"
+  ],
+  "cpu": [
+    "arm64"
+  ],
+  "files": [
+    "pr-note.exe"
+  ]
+}

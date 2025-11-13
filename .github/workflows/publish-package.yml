@@ -1,0 +1,324 @@
+name: Publish npm and homebrew
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-and-publish:
+    strategy:
+      matrix:
+        include:
+          - target: aarch64-apple-darwin
+            os: macos-latest
+            code-target: darwin-arm64
+            archive: pr-note-${{ github.ref_name }}-darwin-arm64.tar.gz
+          - target: x86_64-apple-darwin
+            os: macos-latest
+            code-target: darwin-x64
+            archive: pr-note-${{ github.ref_name }}-darwin-x64.tar.gz
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-latest
+            code-target: linux-arm64
+            archive: pr-note-${{ github.ref_name }}-linux-arm64.tar.gz
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            code-target: linux-x64
+            archive: pr-note-${{ github.ref_name }}-linux-x64.tar.gz
+          - target: aarch64-pc-windows-msvc
+            os: windows-latest
+            code-target: win32-arm64
+            archive: pr-note-${{ github.ref_name }}-win32-arm64.zip
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            code-target: win32-x64
+            archive: pr-note-${{ github.ref_name }}-win32-x64.zip
+
+    name: Build ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          target: ${{ matrix.target }}
+
+      - name: Install cross
+        run: cargo install cross --locked
+
+      - name: Build ${{ matrix.target }}
+        run: cross build --release --target ${{ matrix.target }}
+
+      - name: Verify binary
+        id: verify-binary
+        run: |
+          BINARY_PATH="target/${{ matrix.target }}/release/pr-note${{ runner.os == 'Windows' && '.exe' || '' }}"
+
+          if [ ! -f "$BINARY_PATH" ]; then
+            echo "Error: Binary not found at $BINARY_PATH"
+            exit 1
+          fi
+
+          ls -la "$BINARY_PATH"
+          echo "binary_path=$BINARY_PATH" >> $GITHUB_OUTPUT
+
+      - name: Place binary in the dist/${{ matrix.code-target }}
+        id: place-binary
+        run: |
+          TARGET_DIR="dist/${{ matrix.code-target }}"
+
+          mkdir -p ${TARGET_DIR}
+          cp -r packages/@pr-note/pr-note-${{ matrix.code-target }}/* ${TARGET_DIR}
+
+          BINARY_PATH="${{ steps.verify-binary.outputs.binary_path }}"
+          cp ${BINARY_PATH} ${TARGET_DIR}
+
+          ls -la ${TARGET_DIR}
+          echo "target_dir=${TARGET_DIR}" >> $GITHUB_OUTPUT
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org
+          cache: npm
+          cache-dependency-path: dist/${{ matrix.code-target }}/package.json
+
+      - name: Dry run "publish ${{ matrix.code-target }} npm package"
+        if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
+        working-directory: ${{ steps.place-binary.outputs.target_dir }}
+        run: npm publish --access public --dry-run
+
+      - name: Publish ${{ matrix.code-target }} npm package
+        if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+        working-directory: ${{ steps.place-binary.outputs.target_dir }}
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Pack ${{ matrix.code-target }} npm package for test main package
+        working-directory: ${{ steps.place-binary.outputs.target_dir }}
+        run: |
+          npm pack
+          ls -la
+
+      - name: Upload built package artifact
+        uses: actions/upload-artifact@v5
+        with:
+          name: pr-note-${{ matrix.code-target }}
+          path: ${{ steps.place-binary.outputs.target_dir }}/*.tgz
+          retention-days: 1
+
+      - name: package binary for GitHub Release(mac, linux)
+        if: ${{ runner.os != 'Windows' && startsWith(github.ref, 'refs/tags/v') }}
+        run: |
+          mkdir -p brew
+          ARCHIVE_NAME=${{ matrix.archive }}
+          BINARY_PATH="${{ steps.verify-binary.outputs.binary_path }}"
+
+          tar -czvf "brew/$ARCHIVE_NAME" -C "$(dirname "$BINARY_PATH")" "$(basename "$BINARY_PATH")"
+          ls -la brew/
+
+      - name: package binary for GitHub Release(windows)
+        if: ${{ runner.os == 'Windows' && startsWith(github.ref, 'refs/tags/v') }}
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path brew
+          $ARCHIVE_NAME = "${{ matrix.archive }}"
+          $BINARY_PATH = "${{ steps.verify-binary.outputs.binary_path }}"
+
+          Compress-Archive -Path $BINARY_PATH -DestinationPath "brew/$ARCHIVE_NAME"
+          Get-ChildItem brew/
+
+      - name: Upload to GitHub Release
+        if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+        uses: softprops/action-gh-release@v2
+        with:
+          files: brew/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  publish-pr-note-to-npm:
+    name: Publish @pr-note/pr-note
+    needs: build-and-publish
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Download all built artifacts
+        uses: actions/download-artifact@v5
+        with:
+          path: dist/
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org
+          cache: npm
+          cache-dependency-path: packages/@pr-note/pr-note/package.json
+
+      - name: Verify main package
+        id: verify-main-package
+        run: |
+          PACKAGE_DIR="packages/@pr-note/pr-note"
+
+          if [ ! -d ${PACKAGE_DIR} ]; then
+            echo "${PACKAGE_DIR} not found"
+            exit 1
+          fi
+
+          ls -la ${PACKAGE_DIR}
+          echo "package_dir=${PACKAGE_DIR}" >> $GITHUB_OUTPUT
+
+      - name: Install platform packages locally
+        working-directory: ${{ steps.verify-main-package.outputs.package_dir }}
+        run: find ../../.. -name "*.tgz" -type f -print0 | xargs -0 -I{} npm install {}
+
+      - name: Link main package (generate .bin)
+        working-directory: ${{ steps.verify-main-package.outputs.package_dir }}
+        run: |
+          ls -R node_modules
+          npm pack
+          npm install ./$(npm pack | tail -n1)
+          echo "--- Check node_modules/.bin ---"
+          ls -R node_modules
+
+      - name: Run local test
+        working-directory: ${{ steps.verify-main-package.outputs.package_dir }}
+        run: |
+          echo "Running CLI..."
+          set +e
+          npx pr-note --help
+          echo "Exit code: $?"
+          node bin/cli.mjs --help 2>&1 | tee cli.log
+          echo "Exit code: $?"
+
+      - name: Dry run publish main package
+        if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
+        working-directory: ${{ steps.verify-main-package.outputs.package_dir }}
+        run: npm publish --access public --dry-run
+
+      - name: Publish main package
+        if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+        working-directory: ${{ steps.verify-main-package.outputs.package_dir }}
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  update-homebrew:
+    name: Update Homebrew Tap
+    needs: build-and-publish
+    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout tap repo
+        uses: actions/checkout@v5
+        with:
+          repository: K-tecchan/homebrew-tap
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          path: homebrew-tap
+
+      - name: Fetch release assets
+        id: get-assets
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const {owner, repo} = context.repo;
+            const tag = context.ref.replace("refs/tags/", "");
+            const release = await github.rest.repos.getReleaseByTag({ owner, repo, tag });
+            const assets = release.data.assets.map(a => ({ name: a.name, url: a.browser_download_url }));
+            core.setOutput("assets", JSON.stringify(assets));
+
+      - name: Download and calculate SHA256
+        id: sha256
+        run: |
+          mkdir -p assets
+          for url in $(echo "${{ steps.get-assets.outputs.assets }}" | jq -r '.[].url'); do
+            fname=$(basename "$url")
+            curl -sL "$url" -o "assets/$fname"
+          done
+          echo "--- Calculating SHA256 ---"
+          for f in assets/*.tar.gz; do
+            echo "$(basename $f)=$(sha256sum $f | awk '{print $1}')" >> sha256.txt
+          done
+          cat sha256.txt
+
+      - name: Generate formula
+        run: |
+          VERSION="${GITHUB_REF_NAME}"
+          SHA_DARWIN_X64=$(grep darwin-x64 sha256.txt | cut -d= -f2)
+          SHA_DARWIN_ARM64=$(grep darwin-arm64 sha256.txt | cut -d= -f2)
+          SHA_LINUX_X64=$(grep linux-x64 sha256.txt | cut -d= -f2)
+          SHA_LINUX_ARM64=$(grep linux-arm64 sha256.txt | cut -d= -f2)
+
+          mkdir -p homebrew-tap/Formula
+
+          cat > homebrew-tap/Formula/pr-note.rb <<RUBY
+          class PrNote < Formula
+            desc "A command-line tool to generate PR notes summarizing unmerged PRs on GitHub between two branches."
+            homepage "https://github.com/K-tecchan/pr-note"
+            version "${VERSION}"
+
+            on_macos do
+              if Hardware::CPU.arm?
+                url "https://github.com/K-tecchan/pr-note/releases/download/${VERSION}/pr-note-${VERSION}-darwin-arm64.tar.gz"
+                sha256 "${SHA_DARWIN_ARM64}"
+              end
+              if Hardware::CPU.intel?
+                url "https://github.com/K-tecchan/pr-note/releases/download/${VERSION}/pr-note-${VERSION}-darwin-x64.tar.gz"
+                sha256 "${SHA_DARWIN_X64}"
+              end
+            end
+
+            on_linux do
+              if Hardware::CPU.arm?
+                url "https://github.com/K-tecchan/pr-note/releases/download/${VERSION}/pr-note-${VERSION}-linux-arm64.tar.gz"
+                sha256 "${SHA_LINUX_ARM64}"
+              end
+              if Hardware::CPU.intel?
+                url "https://github.com/K-tecchan/pr-note/releases/download/${VERSION}/pr-note-${VERSION}-linux-x64.tar.gz"
+                sha256 "${SHA_LINUX_X64}"
+              end
+            end
+
+            def install
+              bin.install "pr-note"
+            end
+
+            test do
+              system "#{bin}/pr-note", "--version"
+            end
+          end
+          RUBY
+
+      - name: Commit and push formula
+        working-directory: homebrew-tap
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/pr-note.rb
+          git commit -m "Update pr-note to ${GITHUB_REF#refs/tags/}" || echo "No changes"
+          git push

@@ -1,0 +1,33 @@
+query GetUnMergedCommits(
+  $owner: String!
+  $repo: String!
+  $base: String!
+  $head: String!
+) {
+  repository(owner: $owner, name: $repo) {
+    ref(qualifiedName: $base) {
+      compare(headRef: $head) {
+        commits(first: 200) {
+          nodes {
+            associatedPullRequests(first: 1) {
+              nodes {
+                number
+                title
+                body
+                author {
+                  login
+                  __typename
+                }
+                labels(first: 5, orderBy: { field: NAME, direction: ASC }) {
+                  nodes {
+                    name
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "name": "@pr-note/pr-note-linux-arm64",
+  "version": "0.1.0",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/K-tecchan/pr-note.git",
+    "directory": "packages/@pr-note/pr-note-linux-arm64"
+  },
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "arm64"
+  ],
+  "files": [
+    "pr-note"
+  ]
+}
