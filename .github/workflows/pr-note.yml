@@ -26,5 +26,5 @@ jobs:
           --head main
           --template-path .github/release-template.tera
           --group-by title
-    env:
-      PR_NOTE_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          PR_NOTE_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
