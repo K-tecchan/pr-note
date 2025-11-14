@@ -1,0 +1,14 @@
+Release {{ now() | date(format="%Y-%m-%d") }}
+
+{% for group, grouped_prs in prs | group_by(attribute="group") %}
+  {%- if group != "" -%}
+## {{ group }}
+  {%- endif -%}
+  {% for pr in grouped_prs %}
+    {%- if pr.body is containing("- [x] release ok") %}
+- [x] #{{ pr.number }} by @{{ pr.author }}
+    {%- else %}
+- [ ] #{{ pr.number }} by @{{ pr.author }}
+    {%- endif -%}
+  {% endfor %}
+{% endfor %}
