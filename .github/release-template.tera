@@ -1,7 +1,11 @@
 Release {{ now() | date(format="%Y-%m-%d") }}
 
+{% set unique_group_count = prs | unique(attribute="group") | length -%}
 {% for group, grouped_prs in prs | group_by(attribute="group") %}
-  {%- if group != "" -%}
+  {#- below line means `if group != "" and not (unique_group_count == 1 and group == "others")` -#}
+  {#- but tera fails combined logic, it will be fixed in v2 -#}
+  {#- reffer: https://github.com/Keats/tera/issues/686 -#}
+  {%- if group != "" and (unique_group_count != 1 or group != "others") -%}
 ## {{ group }}
   {%- endif -%}
   {% for pr in grouped_prs %}
