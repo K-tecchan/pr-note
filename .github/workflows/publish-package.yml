@@ -212,11 +212,15 @@ jobs:
             core.setOutput("assets", JSON.stringify(assets));
 
       - name: Download and calculate SHA256
-        id: sha256
         run: |
           mkdir -p assets
 
-          echo '${{ steps.get-assets.outputs.assets }}' | jq -r '.[].url' | while read -r url; do
+          JSON=$(cat <<'EOF'
+          ${{ steps.get-assets.outputs.assets }}
+          EOF
+          )
+
+          echo "$JSON" | jq -r '.[].url' | while read -r url; do
               fname=$(basename "$url")
               curl -sL "$url" -o "assets/$fname"
           done
@@ -232,10 +236,10 @@ jobs:
       - name: Generate formula
         run: |
           VERSION="${GITHUB_REF_NAME}"
-          SHA_DARWIN_X64=$(grep darwin-x64 sha256.txt | cut -d= -f2)
           SHA_DARWIN_ARM64=$(grep darwin-arm64 sha256.txt | cut -d= -f2)
-          SHA_LINUX_X64=$(grep linux-x64 sha256.txt | cut -d= -f2)
+          SHA_DARWIN_X64=$(grep darwin-x64 sha256.txt | cut -d= -f2)
           SHA_LINUX_ARM64=$(grep linux-arm64 sha256.txt | cut -d= -f2)
+          SHA_LINUX_X64=$(grep linux-x64 sha256.txt | cut -d= -f2)
 
           mkdir -p homebrew-tap/Formula
 
@@ -283,7 +287,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add Formula/pr-note.rb
-          git commit -m "Update pr-note to ${GITHUB_REF#refs/tags/}" || echo "No changes"
+          git commit -m "Update pr-note to ${GITHUB_REF_NAME}" || echo "No changes"
           git push
 
   publish-crate:
