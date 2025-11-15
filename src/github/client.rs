@@ -115,7 +115,10 @@ impl Client {
         Ok(())
     }
 
-    pub fn extract_pr_info(&self, data: GetUnMergedCommitsResult) -> Vec<PullRequest> {
+    pub fn extract_pr_info(
+        &self,
+        data: GetUnMergedCommitsResult,
+    ) -> Result<Vec<PullRequest>, &str> {
         let mut prs = Vec::new();
         let mut seen = HashSet::new();
 
@@ -123,13 +126,11 @@ impl Client {
             Ok(response) => match response.data {
                 Some(data) => data,
                 None => {
-                    eprintln!("GraphQL errors occurred. Could not extract PR info.");
-                    return prs;
+                    return Err("GraphQL errors occurred. Could not extract PR info.");
                 }
             },
             Err(_) => {
-                eprintln!("Failed to get a valid response from GitHub GraphQL API.");
-                return prs;
+                return Err("Failed to get a valid response from GitHub GraphQL API.");
             }
         };
 
@@ -172,7 +173,7 @@ impl Client {
             }
         }
 
-        prs
+        Ok(prs)
     }
 
     pub async fn get_un_merged_commits(&self) -> GetUnMergedCommitsResult {
