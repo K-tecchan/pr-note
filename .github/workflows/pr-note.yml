@@ -1,4 +1,4 @@
-name: create release pr
+name: Create(Update) release PR note
 
 on:
   push:
@@ -15,7 +15,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v5
-      - run: cargo install pr-note
+      - run: cargo install --path .
       - run: >
           pr-note
           --owner K-tecchan
