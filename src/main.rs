@@ -11,19 +11,28 @@ async fn main() {
     let client = github::Client::new(args.clone());
     let commits = client.get_un_merged_commits().await;
     let prs = client.extract_pr_info(commits);
-    if prs.is_empty() {
-        println!(
-            "No unmerged PRs found between {} and {}.",
-            args.base, args.head
-        );
-        return;
-    }
+    let prs = match prs {
+        Ok(prs) => {
+            if prs.is_empty() {
+                println!(
+                    "No unmerged PRs found between {} and {}.",
+                    args.base, args.head
+                );
+                return;
+            }
+            prs
+        }
+        Err(e) => {
+            eprintln!("{e}");
+            return;
+        }
+    };
 
     let mut doc = doc::Doc::new();
     let note = match doc.render(&args, &prs) {
         Ok(note) => note,
         Err(e) => {
-            eprintln!("Failed to render the PR note: {}", e);
+            eprintln!("Failed to render the PR note: {e}");
             return;
         }
     };

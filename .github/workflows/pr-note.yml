@@ -1,0 +1,28 @@
+name: Create(Update) release PR note
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  pr-note:
+    name: pr-note
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v5
+      - run: cargo install --path .
+      - run: >
+          pr-note
+          --owner K-tecchan
+          --repo pr-note
+          --base release
+          --head main
+          --template-path .github/release-template.tera
+          --group-by title
+        env:
+          PR_NOTE_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
