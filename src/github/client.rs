@@ -148,6 +148,11 @@ impl Client {
                     continue;
                 }
 
+                // Skip the release PR itself (e.g., head -> base PR)
+                if pr.base_ref_name == self.base && pr.head_ref_name == self.head {
+                    continue;
+                }
+
                 prs.push(PullRequest {
                     author: pr
                         .author
