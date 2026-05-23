@@ -45,11 +45,14 @@ jobs:
       run:
         shell: bash
     permissions:
-      contents: write
+      contents: read
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: true
 
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
