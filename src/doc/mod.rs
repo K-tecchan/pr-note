@@ -60,7 +60,7 @@ impl PullRequest {
                 }
             }
             Some(Group::Title) => {
-                let re_head = Regex::new(r"^\s*(\[(?:[^\[\]]+)\])+").unwrap();
+                let re_head = Regex::new(r"(\[(?:[^\[\]]+)\])+").unwrap();
 
                 if let Some(m) = re_head.find(&self.title) {
                     let head = m.as_str();
@@ -132,6 +132,23 @@ mod tests {
             labels: vec!["bug".to_string(), "enhancement".to_string()],
             number: 1,
             title: "[documentation][duplicate]Add[aaaa] feature A[aaaaaa]".to_string(),
+            body: "body".to_string(),
+        }];
+
+        let extended_prs: Vec<ExtendedPullRequest> = prs
+            .into_iter()
+            .map(|pr| pr.into_extended(&Some(Group::Title)))
+            .collect();
+        assert_eq!(extended_prs[0].group, "documentation / duplicate");
+    }
+
+    #[test]
+    fn test_into_extended_when_group_by_title_with_revert_prefix() {
+        let prs = vec![PullRequest {
+            author: "octocat".to_string(),
+            labels: vec![],
+            number: 2,
+            title: "Revert [documentation][duplicate] Add feature A".to_string(),
             body: "body".to_string(),
         }];
 
